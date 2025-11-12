@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Hello, world!</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="" />
+  <link rel="stylesheet" href="/stylesheets/background.css">
+</head>
+
+<body>
+  
+  <div class="container px-4">
+    <div class="row gx-5">
+
+      <div class="col">
+        <div class="row">
+          <div class="col" align="center">
+            <center>
+
+              <% if(role=="BoysHostelAdmin" || role=="GirlsHostelAdmin") { %>
+              <% if(result.length> 0) { %>
+              <div class="container-lg">
+                <div class="row">
+                  <% for(var i=0;i<result.length;i++){ %>
+                  <div class="col-xl-4 col">
+                    <div class="card text-dark bg-white mb-3" style="max-width: 18rem;">
+                      <div class="card-header text-dark"><b><%-result[i].sname %></b></div>
+                      <div class="card-body">
+                        <h5 class="card-title text-dark"></h5>
+                        <img src="/images/happy-birthday (2).png" />
+                      </div>
+                    </div>
+                  </div>
+                  <% } %>
+                </div>
+              </div>
+
+              <% }else{ %>
+              <div class="container">
+                <%
+const imgs = [
+  { src: '/images/hostellogo.jpeg', alt: 'Image Description' },
+  { src: '/hostelphotos/hostel1.jpeg', alt: 'Image Description' },
+  { src: '/hostelphotos/hostel2.jpeg', alt: 'Image Description' },
+  { src: '/hostelphotos/hostel3.jpeg', alt: 'Image Description' },
+  { src: '/hostelphotos/hostel4.jpeg', alt: 'Image Description' },
+  { src: '/hostelphotos/hostel5.jpeg', alt: 'Image Description' },
+  { src: '/hostelphotos/hostel6.jpeg', alt: 'Image Description' },
+  { src: '/hostelphotos/hostel7.jpeg', alt: 'Image Description' },
+  { src: '/hostelphotos/hostel8.jpeg', alt: 'Image Description' }
+];
+%>
+
+<div class="carousel">
+  <% imgs.forEach((img, i) => { %>
+    <div class="carousel__content--wrapper">
+      <div class="carousel__content">
+        <% let prev = i === 0 ? imgs.length - 1 : i - 1; %>
+        <% let next = i === imgs.length - 1 ? 0 : i + 1; %>
+
+        <label class="carousel__nav carousel__nav--prev" for="radio<%= prev %>">&lt;</label>
+        <label class="carousel__nav carousel__nav--next" for="radio<%= next %>">&gt;</label>
+        
+        <figure class="carousel--img">
+          <img src="<%= img.src %>" alt="<%= img.alt %>">
+        </figure>
+      </div>
+    </div>
+  <% }); %>
+
+  <div class="carousel__pagination">
+    <% imgs.forEach((img, i) => { %>
+      <input type="radio" id="radio<%= i %>" name="selectedImage" <%= i === 0 ? 'checked' : '' %>>
+    <% }); %>
+  </div>
+</div>
+
+              </div>
+                
+              <% } %>
+              <% } %>
+            </center>
+          </div>
+        </div>
+      </div>
+
+      
+    </div>
+
+
+</body>
+
+</html>
