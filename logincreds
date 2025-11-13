@@ -1,0 +1,1 @@
+node scripts/create_admin.js harshad "Super Admin" password SuperID
