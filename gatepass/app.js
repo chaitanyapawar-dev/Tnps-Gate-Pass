@@ -2188,6 +2188,62 @@ app.get('/loginpanel', function (req, res) {
   res.render(__dirname + '/views/loginpanel', { message: req.flash('message') });
 });
 
+
+// Sign up page (render)
+app.get('/signup', function (req, res) {
+  res.render(__dirname + '/views/signup', { message: req.flash('message') });
+});
+
+// Sign up form handler - create admin user with bcrypt-hashed password
+app.post('/signup', async function (req, res) {
+  const UID = req.body.UID;
+  const name = req.body.name || '';
+  const password = req.body.password;
+  const category = req.body.category;
+  const Hostel = req.body.Hostel || null;
+
+  if (!UID || !password || !category) {
+    req.flash('message', 'UID, password and category are required');
+    return res.redirect('/signup');
+  }
+
+  try {
+    const hashed = await bcrypt.hash(password, 12);
+
+    dbbconnection.getConnection(function (err, connection) {
+      if (err) {
+        console.error('DB connection error:', err);
+        req.flash('message', 'Database connection error');
+        return res.redirect('/signup');
+      }
+
+      const sql = 'INSERT INTO admin (uid, name, password, category, Hostel) VALUES (?, ?, ?, ?, ?)';
+      const params = [UID, name, hashed, category, Hostel];
+
+      connection.query(sql, params, function (err, result) {
+        connection.release();
+        if (err) {
+          console.error('Error inserting admin:', err);
+          // handle duplicate UID gracefully
+          if (err.code === 'ER_DUP_ENTRY') {
+            req.flash('message', 'UID already exists');
+            return res.redirect('/signup');
+          }
+          req.flash('message', 'Error creating account');
+          return res.redirect('/signup');
+        }
+
+        req.flash('message', 'Signup successful. Please login.');
+        return res.redirect('/loginpanel');
+      });
+    });
+  } catch (e) {
+    console.error('Signup error:', e);
+    req.flash('message', 'Server error');
+    return res.redirect('/signup');
+  }
+});
+
 app.get('/chart', function (req, res) {
 
   res.render(__dirname + '/views/chart', { message: req.flash('message') });
@@ -2856,8 +2912,9 @@ app.get('/Unrestrictstu/:uid', function (req, res) {
 })
 
 
-app.listen(process.env.PORT, () => {
-  console.log("Server running ");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log("Server running on port ", PORT);
 
 });
 //process.env.PORT
