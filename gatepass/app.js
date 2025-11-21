@@ -2599,6 +2599,10 @@ app.get('/deacivatepass/:id', verifyjwt, function (req, res) {
 
 //importing excel
 app.post('/import-excel', uploadFile.single('import-excel'), async function (req, res) {
+  if (!req.file) {
+    console.error("File not uploaded or an error occurred during upload.");
+    return res.render('studentsupdate', {message: "Error: No file selected or file upload failed."});
+  }
   console.log(req.file.path)
   await readXlsxFile(req.file.path).then((rows) => {
     rows.shift()
@@ -2879,7 +2883,27 @@ app.post('/daterangecampusreport', verifyjwt, function (req, res) {
 });
 
 
-app.get('/restrictstu/:uid', function (req, res) {
+function getSafeRedirectPath(req, fallback = '/outstudents') {
+  const direct = req.query.redirect;
+  if (direct && direct.startsWith('/')) {
+    return direct;
+  }
+  const referer = req.get('Referer');
+  if (referer) {
+    try {
+      const refererUrl = new URL(referer);
+      if (refererUrl.pathname.startsWith('/')) {
+        return refererUrl.pathname + refererUrl.search;
+      }
+    } catch (err) {
+      // ignore malformed referer header
+    }
+  }
+  return fallback;
+}
+
+app.get('/restrictstu/:uid', verifyjwt, function (req, res) {
+  const redirectPath = getSafeRedirectPath(req);
   var uid = req.params.uid;
   dbbconnection.getConnection(function (err, connection) {
 
@@ -2888,14 +2912,15 @@ app.get('/restrictstu/:uid', function (req, res) {
       if (err) throw err;
       else {
         req.flash('message', 'Restrict successfully');
-        res.redirect('/outstudents');
+        res.redirect(redirectPath);
       }
     });
     connection.release();
   });
 })
 
-app.get('/Unrestrictstu/:uid', function (req, res) {
+app.get('/Unrestrictstu/:uid', verifyjwt, function (req, res) {
+  const redirectPath = getSafeRedirectPath(req);
   var uid = req.params.uid;
   dbbconnection.getConnection(function (err, connection) {
 
@@ -2904,7 +2929,7 @@ app.get('/Unrestrictstu/:uid', function (req, res) {
       if (err) throw err;
       else {
         req.flash('message', 'UnRestrict successfully');
-        res.redirect('/outstudents');
+        res.redirect(redirectPath);
       }
     });
     connection.release();

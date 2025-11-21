@@ -14,7 +14,7 @@ Notes and assumptions:
 - The source SQL dumps used many `VARCHAR` columns for date/time values (e.g. `indatetime`, `outdatetime`). Consider converting these to `DATETIME` or `TIMESTAMP` after import for proper date operations.
 - Two student tables exist: `studentdetails` and `studentdetails2`. Both were preserved as separate tables.
 - No foreign key constraints were present in the original dumps; I did not invent relationships. If you want FK constraints, I can suggest appropriate ones based on code references.
-- If you want seed data restored, provide the data exports or I can extract INSERTs from the original dumps if present.
+- A lightweight seed script `dummy_studentdetails.sql` is included for local testing. Import it after the schema to load 10 representative hostel/day-scholar students with mixed genders and status values.
 
 If you'd like, I can:
 
