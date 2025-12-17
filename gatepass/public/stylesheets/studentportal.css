@@ -22,9 +22,8 @@ body {
     width: 260px;
     background: #1a1a2e;
     padding: 20px;
-    z-index: 1000;
+    z-index: 100;
     transition: all 0.3s ease;
-    overflow-y: auto;
 }
 
 .sidebar .logo {
@@ -730,6 +729,27 @@ body {
 
 /* Responsive */
 @media (max-width: 992px) {
+    .sidebar {
+        width: 80px;
+        padding: 10px;
+    }
+    
+    .sidebar .logo h2,
+    .sidebar .nav-links li a span,
+    .sidebar .user-info .name,
+    .sidebar .user-info .role {
+        display: none;
+    }
+    
+    .sidebar .nav-links li a {
+        justify-content: center;
+        padding: 15px;
+    }
+    
+    .sidebar .nav-links li a i {
+        margin-right: 0;
+    }
+    
     .main-content {
         margin-left: 80px;
     }
@@ -737,7 +757,7 @@ body {
 
 @media (max-width: 768px) {
     .sidebar {
-        display: block;
+        display: none;
     }
     
     .main-content {
@@ -934,15 +954,13 @@ body {
     width: 100%;
     height: 100%;
     background: rgba(0,0,0,0.5);
-    z-index: 999;
+    z-index: 90;
     opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: opacity 0.3s ease;
 }
 
 .sidebar-overlay.active {
     opacity: 1;
-    visibility: visible;
 }
 
 /* =====================================================
@@ -981,18 +999,16 @@ body {
 @media screen and (max-width: 768px) {
     /* Show menu toggle */
     .menu-toggle {
-        display: flex !important;
-        z-index: 1001;
+        display: flex;
     }
     
     .sidebar-close {
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
+        display: flex;
     }
     
     .sidebar-overlay {
-        display: block !important;
+        display: block;
+        pointer-events: none;
     }
     
     .sidebar-overlay.active {

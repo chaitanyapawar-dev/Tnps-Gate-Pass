@@ -6,6 +6,7 @@ var bodyparser = require('body-parser');
 const jwt = require('jsonwebtoken')
 var path = require('path');
 const secretkey = "secretkeysvpcet";
+const studentSecretKey = "studentsecretkeysvpcet"; // Separate secret for student tokens
 const bcrypt = require('bcrypt');
 var session = require('express-session');
 var cookieParser = require('cookie-parser');
@@ -2804,6 +2805,187 @@ app.post('/activepassdaterange', function (req, res) {
 
 });
 
+//Sick Leave - Scan ID page
+app.get('/sickleave', verifyjwt, function (req, res) {
+  const tokenadmin = req.cookies.jwt;
+  try {
+    const decode = jwt.verify(tokenadmin, secretkey);
+    role = decode.role;
+    if (role == "SuperID" || role == "Hostelauthority" || role == "BoysHostelAdmin" || role == "GirlsHostelAdmin") {
+      res.render(__dirname + '/views/sickleave', { message: req.flash('message') });
+    } else {
+      req.flash('message', 'Unauthorised access');
+      res.redirect('/loginpanel');
+    }
+  } catch (err) {
+    res.clearCookie("jwt");
+    req.flash('message', 'Something went wrong');
+    return res.redirect('/loginpanel');
+  }
+});
+
+//Sick Leave - Form page after scanning
+app.get('/sickleaveform/:uid', verifyjwt, function (req, res) {
+  const tokenadmin = req.cookies.jwt;
+  try {
+    const decode = jwt.verify(tokenadmin, secretkey);
+    role = decode.role;
+    if (role == "SuperID" || role == "Hostelauthority" || role == "BoysHostelAdmin" || role == "GirlsHostelAdmin") {
+      var uid = req.params.uid;
+      dbbconnection.getConnection(function (err, connection) {
+        var sql = "select * from studentdetails where category='Hostel' and uid='" + uid + "'";
+        connection.query(sql, function (err, result) {
+          if (err) throw err;
+          if (result.length > 0) {
+            res.render(__dirname + '/views/sickleaveform', { result: result, message: req.flash('message') });
+          } else {
+            req.flash('message', 'Student not found or not a hostel student');
+            res.redirect('/sickleave');
+          }
+          connection.release();
+        });
+      });
+    } else {
+      req.flash('message', 'Unauthorised access');
+      res.redirect('/loginpanel');
+    }
+  } catch (err) {
+    res.clearCookie("jwt");
+    req.flash('message', 'Something went wrong');
+    return res.redirect('/loginpanel');
+  }
+});
+
+//Sick Leave - Save sick leave record
+app.post('/savesickleave/:uid', verifyjwt, function (req, res) {
+  const tokenadmin = req.cookies.jwt;
+  try {
+    const decode = jwt.verify(tokenadmin, secretkey);
+    role = decode.role;
+    var adminname = decode.adminname;
+    if (role == "SuperID" || role == "Hostelauthority" || role == "BoysHostelAdmin" || role == "GirlsHostelAdmin") {
+      var uid = req.params.uid;
+      var illness = req.body.illness || req.body.other_illness;
+      if (!illness || illness.trim() === '') {
+        req.flash('message', 'Please select or enter an illness type');
+        return res.redirect('/sickleaveform/' + uid);
+      }
+      // Sanitize illness input to prevent SQL injection
+      illness = illness.trim().replace(/'/g, "''");
+      
+      dbbconnection.getConnection(function (err, connection) {
+        var currentDateTime = datetime(currentdate());
+        var logdate = currentDateTime.split(' ')[0];
+        var logtime = currentDateTime.split(' ')[1] + ' ' + (currentDateTime.split(' ')[2] || '');
+        
+        var sql = "INSERT INTO sick_leave_logs (uid, illness, logdate, logtime, recorded_by, created_at) VALUES ('" + uid + "', '" + illness + "', '" + logdate + "', '" + logtime + "', '" + adminname + "', '" + currentDateTime + "')";
+        connection.query(sql, function (err, result) {
+          if (err) {
+            console.error('Error saving sick leave:', err);
+            req.flash('message', 'Error saving sick leave record. Please try again.');
+            res.redirect('/sickleaveform/' + uid);
+          } else {
+            req.flash('message', 'Sick leave recorded successfully');
+            res.redirect('/sickleave');
+          }
+          connection.release();
+        });
+      });
+    } else {
+      req.flash('message', 'Unauthorised access');
+      res.redirect('/loginpanel');
+    }
+  } catch (err) {
+    res.clearCookie("jwt");
+    req.flash('message', 'Something went wrong');
+    return res.redirect('/loginpanel');
+  }
+});
+
+//Sick Leave - View logs
+app.get('/sickleavelogs', verifyjwt, function (req, res) {
+  const tokenadmin = req.cookies.jwt;
+  try {
+    const decode = jwt.verify(tokenadmin, secretkey);
+    role = decode.role;
+    dbbconnection.getConnection(function (err, connection) {
+      if (role == "BoysHostelAdmin") {
+        var sql = "SELECT sl.*, stu.sname, stu.dept FROM sick_leave_logs as sl JOIN studentdetails as stu ON sl.uid = stu.uid WHERE stu.gender='MALE' AND stu.category='Hostel' ORDER BY sl.created_at DESC LIMIT 100";
+        connection.query(sql, function (err, result) {
+          if (err) throw err;
+          res.render(__dirname + '/views/sickleavelogs', { result: result, message: req.flash('message'), role: role });
+          connection.release();
+        });
+      } else if (role == "GirlsHostelAdmin") {
+        var sql = "SELECT sl.*, stu.sname, stu.dept FROM sick_leave_logs as sl JOIN studentdetails as stu ON sl.uid = stu.uid WHERE stu.gender='FEMALE' AND stu.category='Hostel' ORDER BY sl.created_at DESC LIMIT 100";
+        connection.query(sql, function (err, result) {
+          if (err) throw err;
+          res.render(__dirname + '/views/sickleavelogs', { result: result, message: req.flash('message'), role: role });
+          connection.release();
+        });
+      } else if (role == "SuperID") {
+        var sql = "SELECT sl.*, stu.sname, stu.dept FROM sick_leave_logs as sl JOIN studentdetails as stu ON sl.uid = stu.uid WHERE stu.category='Hostel' ORDER BY sl.created_at DESC LIMIT 100";
+        connection.query(sql, function (err, result) {
+          if (err) throw err;
+          res.render(__dirname + '/views/sickleavelogs', { result: result, message: req.flash('message'), role: role });
+          connection.release();
+        });
+      } else {
+        req.flash('message', 'Unauthorised access');
+        res.redirect('/loginpanel');
+        connection.release();
+      }
+    });
+  } catch (err) {
+    res.clearCookie("jwt");
+    req.flash('message', 'Something went wrong');
+    return res.redirect('/loginpanel');
+  }
+});
+
+//Sick Leave - Date range filter
+app.post('/sickleavelogsdaterange', verifyjwt, function (req, res) {
+  const tokenadmin = req.cookies.jwt;
+  try {
+    const decode = jwt.verify(tokenadmin, secretkey);
+    role = decode.role;
+    var datefrom = req.body.datefrom;
+    var dateto = req.body.dateto;
+    dbbconnection.getConnection(function (err, connection) {
+      if (role == "BoysHostelAdmin") {
+        var sql = "SELECT sl.*, stu.sname, stu.dept FROM sick_leave_logs as sl JOIN studentdetails as stu ON sl.uid = stu.uid WHERE stu.gender='MALE' AND stu.category='Hostel' AND date(sl.logdate) BETWEEN date('" + datefrom + "') AND date('" + dateto + "') ORDER BY sl.created_at DESC";
+        connection.query(sql, function (err, result) {
+          if (err) throw err;
+          res.render(__dirname + '/views/sickleavelogs', { result: result, message: req.flash('message'), role: role });
+          connection.release();
+        });
+      } else if (role == "GirlsHostelAdmin") {
+        var sql = "SELECT sl.*, stu.sname, stu.dept FROM sick_leave_logs as sl JOIN studentdetails as stu ON sl.uid = stu.uid WHERE stu.gender='FEMALE' AND stu.category='Hostel' AND date(sl.logdate) BETWEEN date('" + datefrom + "') AND date('" + dateto + "') ORDER BY sl.created_at DESC";
+        connection.query(sql, function (err, result) {
+          if (err) throw err;
+          res.render(__dirname + '/views/sickleavelogs', { result: result, message: req.flash('message'), role: role });
+          connection.release();
+        });
+      } else if (role == "SuperID") {
+        var sql = "SELECT sl.*, stu.sname, stu.dept FROM sick_leave_logs as sl JOIN studentdetails as stu ON sl.uid = stu.uid WHERE stu.category='Hostel' AND date(sl.logdate) BETWEEN date('" + datefrom + "') AND date('" + dateto + "') ORDER BY sl.created_at DESC";
+        connection.query(sql, function (err, result) {
+          if (err) throw err;
+          res.render(__dirname + '/views/sickleavelogs', { result: result, message: req.flash('message'), role: role });
+          connection.release();
+        });
+      } else {
+        req.flash('message', 'Unauthorised access');
+        res.redirect('/loginpanel');
+        connection.release();
+      }
+    });
+  } catch (err) {
+    res.clearCookie("jwt");
+    req.flash('message', 'Something went wrong');
+    return res.redirect('/loginpanel');
+  }
+});
+
 //campus reports
 app.get('/campusreports', verifyjwt, function (req, res) {
 
@@ -2935,6 +3117,780 @@ app.get('/Unrestrictstu/:uid', verifyjwt, function (req, res) {
     connection.release();
   });
 })
+
+
+// =====================================================
+// STUDENT PORTAL ROUTES
+// =====================================================
+
+// Student JWT Verification Middleware
+function verifyStudentJwt(req, res, next) {
+  const studentToken = req.cookies.studentjwt;
+  try {
+    const decode = jwt.verify(studentToken, studentSecretKey);
+    req.studentUid = decode.uid;
+    req.studentName = decode.name;
+    next();
+  } catch (err) {
+    res.clearCookie("studentjwt");
+    return res.redirect('/student/login');
+  }
+}
+
+// Student Login Page
+app.get('/student/login', function (req, res) {
+  res.render(__dirname + '/views/studentlogin', { message: req.flash('message') });
+});
+
+// Student Login Handler
+app.post('/student/login', function (req, res) {
+  const uid = req.body.uid;
+  const password = req.body.password;
+
+  dbbconnection.getConnection(function (err, connection) {
+    if (err) {
+      req.flash('message', 'Database connection error');
+      return res.redirect('/student/login');
+    }
+
+    // First check if student exists
+    var sql = "SELECT * FROM studentdetails WHERE uid = ?";
+    connection.query(sql, [uid], function (err, result) {
+      if (err) {
+        connection.release();
+        req.flash('message', 'Error occurred');
+        return res.redirect('/student/login');
+      }
+
+      if (result.length === 0) {
+        connection.release();
+        req.flash('message', 'Student not found');
+        return res.redirect('/student/login');
+      }
+
+      const student = result[0];
+      
+      // Check if student has a password set, if not use mobile number as default
+      // For first-time login, password should match mobile number
+      const studentPassword = student.password || student.mobileno;
+      
+      // If password exists and is hashed (starts with $2), use bcrypt compare
+      if (student.password && student.password.startsWith('$2')) {
+        bcrypt.compare(password, student.password, function (berr, bresult) {
+          connection.release();
+          if (bresult) {
+            createStudentSession(req, res, student);
+          } else {
+            req.flash('message', 'Incorrect password');
+            return res.redirect('/student/login');
+          }
+        });
+      } else {
+        // Plain text comparison (mobile number as default password)
+        connection.release();
+        if (password === studentPassword) {
+          createStudentSession(req, res, student);
+        } else {
+          req.flash('message', 'Incorrect password. Use your mobile number as default password.');
+          return res.redirect('/student/login');
+        }
+      }
+    });
+  });
+});
+
+// Helper function to create student session
+function createStudentSession(req, res, student) {
+  const studentData = {
+    uid: student.uid,
+    name: student.sname,
+    category: student.category
+  };
+
+  jwt.sign(studentData, studentSecretKey, { expiresIn: '24h' }, (err, token) => {
+    if (err) {
+      req.flash('message', 'Error creating session');
+      return res.redirect('/student/login');
+    }
+    res.cookie('studentjwt', token, { httpOnly: true });
+    res.redirect('/student/dashboard');
+  });
+}
+
+// Student Dashboard
+app.get('/student/dashboard', verifyStudentJwt, function (req, res) {
+  const uid = req.studentUid;
+
+  dbbconnection.getConnection(function (err, connection) {
+    if (err) {
+      req.flash('message', 'Database error');
+      return res.redirect('/student/login');
+    }
+
+    // Get student details
+    var studentSql = "SELECT * FROM studentdetails WHERE uid = ?";
+    connection.query(studentSql, [uid], function (err, studentResult) {
+      if (err || studentResult.length === 0) {
+        connection.release();
+        req.flash('message', 'Student not found');
+        return res.redirect('/student/login');
+      }
+
+      const student = studentResult[0];
+
+      // Get statistics
+      var statsSql = "SELECT COUNT(*) as totalPasses FROM log_details1 WHERE uid = ? AND passtype IS NOT NULL";
+      var monthStatsSql = "SELECT COUNT(*) as monthPasses FROM log_details1 WHERE uid = ? AND passtype IS NOT NULL AND MONTH(approvaldt) = MONTH(CURDATE()) AND YEAR(approvaldt) = YEAR(CURDATE())";
+      var activePassSql = "SELECT * FROM log_details1 WHERE uid = ? AND status = 'ACTIVE' ORDER BY logid DESC LIMIT 1";
+      var recentLogsSql = "SELECT * FROM log_details1 WHERE uid = ? ORDER BY logid DESC LIMIT 10";
+
+      connection.query(statsSql, [uid], function (err, statsResult) {
+        connection.query(monthStatsSql, [uid], function (err, monthResult) {
+          connection.query(activePassSql, [uid], function (err, activeResult) {
+            connection.query(recentLogsSql, [uid], function (err, recentResult) {
+              connection.release();
+
+              const stats = {
+                totalPasses: statsResult[0] ? statsResult[0].totalPasses : 0,
+                monthPasses: monthResult[0] ? monthResult[0].monthPasses : 0
+              };
+
+              const activePass = activeResult.length > 0 ? activeResult[0] : null;
+              const recentLogs = recentResult || [];
+
+              res.render(__dirname + '/views/studentdashboard', {
+                student: student,
+                stats: stats,
+                activePass: activePass,
+                recentLogs: recentLogs,
+                message: req.flash('message')
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+// Student Profile
+app.get('/student/profile', verifyStudentJwt, function (req, res) {
+  const uid = req.studentUid;
+
+  dbbconnection.getConnection(function (err, connection) {
+    if (err) {
+      req.flash('message', 'Database error');
+      return res.redirect('/student/dashboard');
+    }
+
+    var sql = "SELECT * FROM studentdetails WHERE uid = ?";
+    connection.query(sql, [uid], function (err, result) {
+      connection.release();
+      if (err || result.length === 0) {
+        req.flash('message', 'Student not found');
+        return res.redirect('/student/dashboard');
+      }
+
+      res.render(__dirname + '/views/student_profile', {
+        student: result[0],
+        message: req.flash('message')
+      });
+    });
+  });
+});
+
+// Student Change Password
+app.post('/student/changepassword', verifyStudentJwt, async function (req, res) {
+  const uid = req.studentUid;
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+
+  if (newPassword !== confirmPassword) {
+    req.flash('message', 'New passwords do not match');
+    return res.redirect('/student/profile');
+  }
+
+  if (newPassword.length < 6) {
+    req.flash('message', 'Password must be at least 6 characters');
+    return res.redirect('/student/profile');
+  }
+
+  dbbconnection.getConnection(async function (err, connection) {
+    if (err) {
+      req.flash('message', 'Database error');
+      return res.redirect('/student/profile');
+    }
+
+    // Get current student data
+    var sql = "SELECT * FROM studentdetails WHERE uid = ?";
+    connection.query(sql, [uid], async function (err, result) {
+      if (err || result.length === 0) {
+        connection.release();
+        req.flash('message', 'Student not found');
+        return res.redirect('/student/profile');
+      }
+
+      const student = result[0];
+      const storedPassword = student.password || student.mobileno;
+
+      // Verify current password
+      let passwordMatch = false;
+      if (student.password && student.password.startsWith('$2')) {
+        passwordMatch = await bcrypt.compare(currentPassword, student.password);
+      } else {
+        passwordMatch = currentPassword === storedPassword;
+      }
+
+      if (!passwordMatch) {
+        connection.release();
+        req.flash('message', 'Current password is incorrect');
+        return res.redirect('/student/profile');
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+      // Update password
+      var updateSql = "UPDATE studentdetails SET password = ? WHERE uid = ?";
+      connection.query(updateSql, [hashedPassword, uid], function (err, updateResult) {
+        connection.release();
+        if (err) {
+          req.flash('message', 'Error updating password');
+          return res.redirect('/student/profile');
+        }
+
+        req.flash('message', 'Password updated successfully');
+        res.redirect('/student/profile');
+      });
+    });
+  });
+});
+
+// Student Attendance
+app.get('/student/attendance', verifyStudentJwt, function (req, res) {
+  const uid = req.studentUid;
+  const fromDate = req.query.fromDate;
+  const toDate = req.query.toDate;
+
+  dbbconnection.getConnection(function (err, connection) {
+    if (err) {
+      req.flash('message', 'Database error');
+      return res.redirect('/student/dashboard');
+    }
+
+    // Get student details
+    var studentSql = "SELECT * FROM studentdetails WHERE uid = ?";
+    connection.query(studentSql, [uid], function (err, studentResult) {
+      if (err || studentResult.length === 0) {
+        connection.release();
+        return res.redirect('/student/dashboard');
+      }
+
+      const student = studentResult[0];
+
+      // Build attendance query with date filter
+      var attendanceSql = `
+        SELECT *, 
+        CONCAT(FLOOR((TIMESTAMPDIFF(SECOND, outdatetime, indatetime) % 86400)/3600), ' hrs ', 
+               FLOOR((TIMESTAMPDIFF(SECOND, outdatetime, indatetime) % 3600)/60), ' min') AS Duration 
+        FROM log_details1 WHERE uid = ?`;
+      
+      var params = [uid];
+
+      if (fromDate && toDate) {
+        attendanceSql += " AND DATE(COALESCE(approvaldt, outdatetime, indatetime)) BETWEEN ? AND ?";
+        params.push(fromDate, toDate);
+      }
+
+      attendanceSql += " ORDER BY logid DESC LIMIT 100";
+
+      connection.query(attendanceSql, params, function (err, attendanceResult) {
+        // Get statistics
+        var statsSql = `
+          SELECT 
+            COUNT(CASE WHEN indatetime IS NOT NULL THEN 1 END) as totalEntries,
+            COUNT(CASE WHEN outdatetime IS NOT NULL THEN 1 END) as totalExits,
+            COUNT(CASE WHEN MONTH(COALESCE(approvaldt, outdatetime, indatetime)) = MONTH(CURDATE()) THEN 1 END) as monthMovements
+          FROM log_details1 WHERE uid = ?`;
+
+        connection.query(statsSql, [uid], function (err, statsResult) {
+          // Check if currently outside
+          var currentSql = "SELECT * FROM log_details1 WHERE uid = ? AND (status = 'ACTIVE' OR (outdatetime IS NOT NULL AND indatetime IS NULL)) ORDER BY logid DESC LIMIT 1";
+          connection.query(currentSql, [uid], function (err, currentResult) {
+            connection.release();
+
+            const currentlyOut = currentResult.length > 0 && 
+              (currentResult[0].status === 'ACTIVE' || 
+               (currentResult[0].outdatetime && !currentResult[0].indatetime));
+
+            res.render(__dirname + '/views/student_attendance', {
+              student: student,
+              attendance: attendanceResult || [],
+              stats: statsResult[0] || { totalEntries: 0, totalExits: 0, monthMovements: 0 },
+              currentlyOut: currentlyOut,
+              fromDate: fromDate || '',
+              toDate: toDate || '',
+              message: req.flash('message')
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+// Student Pass History
+app.get('/student/passhistory', verifyStudentJwt, function (req, res) {
+  const uid = req.studentUid;
+  const fromDate = req.query.fromDate;
+  const toDate = req.query.toDate;
+  const passType = req.query.passType;
+
+  dbbconnection.getConnection(function (err, connection) {
+    if (err) {
+      req.flash('message', 'Database error');
+      return res.redirect('/student/dashboard');
+    }
+
+    // Get student details
+    var studentSql = "SELECT * FROM studentdetails WHERE uid = ?";
+    connection.query(studentSql, [uid], function (err, studentResult) {
+      if (err || studentResult.length === 0) {
+        connection.release();
+        return res.redirect('/student/dashboard');
+      }
+
+      const student = studentResult[0];
+
+      // Build pass history query
+      var passSql = `
+        SELECT *,
+        CONCAT(FLOOR((TIMESTAMPDIFF(SECOND, outdatetime, indatetime) % 86400)/3600), ' hrs ', 
+               FLOOR((TIMESTAMPDIFF(SECOND, outdatetime, indatetime) % 3600)/60), ' min') AS Duration,
+        CONCAT(FLOOR((TIMESTAMPDIFF(SECOND, approvaldt, hostelintime) % 86400)/3600), ' hrs ', 
+               FLOOR((TIMESTAMPDIFF(SECOND, approvaldt, hostelintime) % 3600)/60), ' min') AS Durationh
+        FROM log_details1 WHERE uid = ? AND passtype IS NOT NULL`;
+      
+      var params = [uid];
+
+      if (fromDate && toDate) {
+        passSql += " AND DATE(approvaldt) BETWEEN ? AND ?";
+        params.push(fromDate, toDate);
+      }
+
+      if (passType) {
+        passSql += " AND passtype = ?";
+        params.push(passType);
+      }
+
+      passSql += " ORDER BY logid DESC LIMIT 100";
+
+      connection.query(passSql, params, function (err, passResult) {
+        // Get statistics
+        var statsSql = `
+          SELECT 
+            COUNT(*) as totalPasses,
+            COUNT(CASE WHEN passtype = 'City Pass' THEN 1 END) as cityPasses,
+            COUNT(CASE WHEN passtype = 'Home Pass' THEN 1 END) as homePasses,
+            COUNT(CASE WHEN MONTH(approvaldt) = MONTH(CURDATE()) AND YEAR(approvaldt) = YEAR(CURDATE()) THEN 1 END) as monthPasses
+          FROM log_details1 WHERE uid = ? AND passtype IS NOT NULL`;
+
+        connection.query(statsSql, [uid], function (err, statsResult) {
+          // Get active pass
+          var activeSql = "SELECT * FROM log_details1 WHERE uid = ? AND status = 'ACTIVE' ORDER BY logid DESC LIMIT 1";
+          connection.query(activeSql, [uid], function (err, activeResult) {
+            connection.release();
+
+            res.render(__dirname + '/views/student_passhistory', {
+              student: student,
+              passes: passResult || [],
+              stats: statsResult[0] || { totalPasses: 0, cityPasses: 0, homePasses: 0, monthPasses: 0 },
+              activePass: activeResult.length > 0 ? activeResult[0] : null,
+              fromDate: fromDate || '',
+              toDate: toDate || '',
+              passType: passType || '',
+              message: req.flash('message')
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+// Student Request Pass Page
+app.get('/student/requestpass', verifyStudentJwt, function (req, res) {
+  const uid = req.studentUid;
+
+  dbbconnection.getConnection(function (err, connection) {
+    if (err) {
+      req.flash('message', 'Database error');
+      return res.redirect('/student/dashboard');
+    }
+
+    // Get student details
+    var studentSql = "SELECT * FROM studentdetails WHERE uid = ?";
+    connection.query(studentSql, [uid], function (err, studentResult) {
+      if (err || studentResult.length === 0) {
+        connection.release();
+        return res.redirect('/student/dashboard');
+      }
+
+      const student = studentResult[0];
+
+      // Check for active pass
+      var activeSql = "SELECT * FROM log_details1 WHERE uid = ? AND status = 'ACTIVE' ORDER BY logid DESC LIMIT 1";
+      connection.query(activeSql, [uid], function (err, activeResult) {
+        // Get pending requests
+        var pendingSql = "SELECT * FROM pass_requests WHERE uid = ? AND status = 'pending' ORDER BY created_at DESC";
+        connection.query(pendingSql, [uid], function (err, pendingResult) {
+          connection.release();
+
+          res.render(__dirname + '/views/student_requestpass', {
+            student: student,
+            activePass: activeResult.length > 0 ? activeResult[0] : null,
+            pendingRequests: pendingResult || [],
+            message: req.flash('message')
+          });
+        });
+      });
+    });
+  });
+});
+
+// Student Submit Pass Request
+app.post('/student/requestpass', verifyStudentJwt, function (req, res) {
+  const uid = req.studentUid;
+  const { passType, expectedOutDate, expectedOutTime, expectedReturnDate, expectedReturnTime, reason, emergencyContact } = req.body;
+
+  dbbconnection.getConnection(function (err, connection) {
+    if (err) {
+      req.flash('message', 'Database error');
+      return res.redirect('/student/requestpass');
+    }
+
+    // Check if student is restricted
+    var checkSql = "SELECT status FROM studentdetails WHERE uid = ?";
+    connection.query(checkSql, [uid], function (err, checkResult) {
+      if (err || checkResult.length === 0 || checkResult[0].status === 'Restrict') {
+        connection.release();
+        req.flash('message', 'Cannot submit request. Account may be restricted.');
+        return res.redirect('/student/requestpass');
+      }
+
+      // Check for existing active pass
+      var activeSql = "SELECT * FROM log_details1 WHERE uid = ? AND status = 'ACTIVE'";
+      connection.query(activeSql, [uid], function (err, activeResult) {
+        if (activeResult && activeResult.length > 0) {
+          connection.release();
+          req.flash('message', 'You already have an active pass');
+          return res.redirect('/student/requestpass');
+        }
+
+        // Insert pass request
+        var insertSql = `
+          INSERT INTO pass_requests 
+          (uid, passtype, expected_out, expected_return, reason, emergency_contact, status, created_at) 
+          VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())`;
+
+        var expectedOut = expectedOutDate + ' ' + expectedOutTime;
+        var expectedReturn = expectedReturnDate + ' ' + (expectedReturnTime || '18:00');
+
+        connection.query(insertSql, [uid, passType, expectedOut, expectedReturn, reason, emergencyContact], function (err, insertResult) {
+          connection.release();
+          if (err) {
+            // If table doesn't exist, create it
+            if (err.code === 'ER_NO_SUCH_TABLE') {
+              req.flash('message', 'Pass request feature is being set up. Please contact admin.');
+            } else {
+              req.flash('message', 'Error submitting request');
+            }
+            return res.redirect('/student/requestpass');
+          }
+
+          req.flash('message', 'Pass request submitted successfully! Awaiting approval.');
+          res.redirect('/student/requestpass');
+        });
+      });
+    });
+  });
+});
+
+// Cancel Pass Request
+app.get('/student/cancelrequest/:id', verifyStudentJwt, function (req, res) {
+  const uid = req.studentUid;
+  const requestId = req.params.id;
+
+  dbbconnection.getConnection(function (err, connection) {
+    if (err) {
+      req.flash('message', 'Database error');
+      return res.redirect('/student/requestpass');
+    }
+
+    var deleteSql = "DELETE FROM pass_requests WHERE requestid = ? AND uid = ? AND status = 'pending'";
+    connection.query(deleteSql, [requestId, uid], function (err, result) {
+      connection.release();
+      if (err) {
+        req.flash('message', 'Error canceling request');
+      } else {
+        req.flash('message', 'Request canceled successfully');
+      }
+      res.redirect('/student/requestpass');
+    });
+  });
+});
+
+// Student Notifications
+app.get('/student/notifications', verifyStudentJwt, function (req, res) {
+  const uid = req.studentUid;
+  const filter = req.query.filter;
+
+  dbbconnection.getConnection(function (err, connection) {
+    if (err) {
+      req.flash('message', 'Database error');
+      return res.redirect('/student/dashboard');
+    }
+
+    // Get student details
+    var studentSql = "SELECT * FROM studentdetails WHERE uid = ?";
+    connection.query(studentSql, [uid], function (err, studentResult) {
+      if (err || studentResult.length === 0) {
+        connection.release();
+        return res.redirect('/student/dashboard');
+      }
+
+      const student = studentResult[0];
+
+      // Get recent passes for notifications
+      var recentSql = "SELECT * FROM log_details1 WHERE uid = ? AND passtype IS NOT NULL ORDER BY logid DESC LIMIT 10";
+      connection.query(recentSql, [uid], function (err, recentResult) {
+        // Try to get notifications from table if exists
+        var notifSql = "SELECT * FROM student_notifications WHERE uid = ? ORDER BY created_at DESC LIMIT 50";
+        connection.query(notifSql, [uid], function (err, notifResult) {
+          connection.release();
+
+          res.render(__dirname + '/views/student_notifications', {
+            student: student,
+            notifications: notifResult || [],
+            recentPasses: recentResult || [],
+            filter: filter || '',
+            message: req.flash('message')
+          });
+        });
+      });
+    });
+  });
+});
+
+// Student Logout
+app.get('/student/logout', function (req, res) {
+  res.clearCookie('studentjwt');
+  req.flash('message', 'Logged out successfully');
+  res.redirect('/student/login');
+});
+
+
+// =====================================================
+// ADMIN - PASS REQUEST MANAGEMENT
+// =====================================================
+
+// Admin - View Pass Requests
+app.get('/admin/passrequests', verifyjwt, function (req, res) {
+  const tokenadmin = req.cookies.jwt;
+  try {
+    const decode = jwt.verify(tokenadmin, secretkey);
+    const role = decode.role;
+
+    if (role !== "SuperID" && role !== "BoysHostelAdmin" && role !== "GirlsHostelAdmin" && role !== "Hostelauthority") {
+      req.flash('message', 'Unauthorized access');
+      return res.redirect('/loginpanel');
+    }
+
+    const filterStatus = req.query.status || '';
+    const fromDate = req.query.fromDate || '';
+    const toDate = req.query.toDate || '';
+
+    dbbconnection.getConnection(function (err, connection) {
+      if (err) {
+        req.flash('message', 'Database error');
+        return res.redirect('/daterange');
+      }
+
+      // Build query based on role
+      let baseSql = `
+        SELECT pr.*, sd.sname, sd.dept, sd.mobileno, sd.gender 
+        FROM pass_requests pr 
+        LEFT JOIN studentdetails sd ON pr.uid = sd.uid 
+        WHERE 1=1`;
+      
+      let params = [];
+
+      // Filter by gender based on admin role
+      if (role === "BoysHostelAdmin") {
+        baseSql += " AND sd.gender = 'MALE'";
+      } else if (role === "GirlsHostelAdmin") {
+        baseSql += " AND sd.gender = 'FEMALE'";
+      }
+
+      if (filterStatus) {
+        baseSql += " AND pr.status = ?";
+        params.push(filterStatus);
+      }
+
+      if (fromDate && toDate) {
+        baseSql += " AND DATE(pr.created_at) BETWEEN ? AND ?";
+        params.push(fromDate, toDate);
+      }
+
+      baseSql += " ORDER BY pr.created_at DESC LIMIT 100";
+
+      connection.query(baseSql, params, function (err, requests) {
+        // Get statistics
+        let statsSql = `
+          SELECT 
+            COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+            COUNT(CASE WHEN status = 'approved' AND DATE(approved_at) = CURDATE() THEN 1 END) as approved,
+            COUNT(CASE WHEN status = 'rejected' AND DATE(approved_at) = CURDATE() THEN 1 END) as rejected,
+            COUNT(*) as total
+          FROM pass_requests`;
+
+        connection.query(statsSql, function (err, statsResult) {
+          connection.release();
+
+          res.render(__dirname + '/views/admin_passrequests', {
+            requests: requests || [],
+            stats: statsResult[0] || { pending: 0, approved: 0, rejected: 0, total: 0 },
+            filterStatus: filterStatus,
+            fromDate: fromDate,
+            toDate: toDate,
+            message: req.flash('message')
+          });
+        });
+      });
+    });
+  } catch (err) {
+    res.clearCookie("jwt");
+    req.flash('message', 'Session expired');
+    return res.redirect('/loginpanel');
+  }
+});
+
+// Admin - Approve Pass Request
+app.post('/admin/approverequest/:id', verifyjwt, function (req, res) {
+  const tokenadmin = req.cookies.jwt;
+  try {
+    const decode = jwt.verify(tokenadmin, secretkey);
+    const adminName = decode.adminname;
+    const requestId = req.params.id;
+
+    dbbconnection.getConnection(function (err, connection) {
+      if (err) {
+        req.flash('message', 'Database error');
+        return res.redirect('/admin/passrequests');
+      }
+
+      // Get request details
+      var getRequestSql = "SELECT * FROM pass_requests WHERE requestid = ? AND status = 'pending'";
+      connection.query(getRequestSql, [requestId], function (err, requestResult) {
+        if (err || requestResult.length === 0) {
+          connection.release();
+          req.flash('message', 'Request not found or already processed');
+          return res.redirect('/admin/passrequests');
+        }
+
+        const request = requestResult[0];
+
+        // Update request status
+        var updateSql = "UPDATE pass_requests SET status = 'approved', approved_by = ?, approved_at = NOW() WHERE requestid = ?";
+        connection.query(updateSql, [adminName, requestId], function (err, updateResult) {
+          if (err) {
+            connection.release();
+            req.flash('message', 'Error approving request');
+            return res.redirect('/admin/passrequests');
+          }
+
+          // Create the actual pass in log_details1
+          var createPassSql = `
+            INSERT INTO log_details1 (uid, status, approvaldt, passtype, hosteloutauth) 
+            VALUES (?, 'ACTIVE', NOW(), ?, ?)`;
+          
+          connection.query(createPassSql, [request.uid, request.passtype, adminName], function (err, passResult) {
+            // Add notification for student
+            var notifSql = `
+              INSERT INTO student_notifications (uid, type, title, message, created_at) 
+              VALUES (?, 'pass_approved', 'Pass Request Approved', ?, NOW())`;
+            var notifMsg = `Your ${request.passtype} request has been approved by ${adminName}. Please collect your pass from the hostel office.`;
+            
+            connection.query(notifSql, [request.uid, notifMsg], function (err, notifResult) {
+              connection.release();
+              req.flash('message', 'Pass request approved and pass generated successfully');
+              res.redirect('/admin/passrequests');
+            });
+          });
+        });
+      });
+    });
+  } catch (err) {
+    res.clearCookie("jwt");
+    req.flash('message', 'Session expired');
+    return res.redirect('/loginpanel');
+  }
+});
+
+// Admin - Reject Pass Request
+app.post('/admin/rejectrequest/:id', verifyjwt, function (req, res) {
+  const tokenadmin = req.cookies.jwt;
+  try {
+    const decode = jwt.verify(tokenadmin, secretkey);
+    const adminName = decode.adminname;
+    const requestId = req.params.id;
+    const rejectionReason = req.body.reason || 'No reason provided';
+
+    dbbconnection.getConnection(function (err, connection) {
+      if (err) {
+        req.flash('message', 'Database error');
+        return res.redirect('/admin/passrequests');
+      }
+
+      // Get request details for notification
+      var getRequestSql = "SELECT * FROM pass_requests WHERE requestid = ? AND status = 'pending'";
+      connection.query(getRequestSql, [requestId], function (err, requestResult) {
+        if (err || requestResult.length === 0) {
+          connection.release();
+          req.flash('message', 'Request not found or already processed');
+          return res.redirect('/admin/passrequests');
+        }
+
+        const request = requestResult[0];
+
+        // Update request status
+        var updateSql = "UPDATE pass_requests SET status = 'rejected', approved_by = ?, approved_at = NOW(), rejection_reason = ? WHERE requestid = ?";
+        connection.query(updateSql, [adminName, rejectionReason, requestId], function (err, updateResult) {
+          if (err) {
+            connection.release();
+            req.flash('message', 'Error rejecting request');
+            return res.redirect('/admin/passrequests');
+          }
+
+          // Add notification for student
+          var notifSql = `
+            INSERT INTO student_notifications (uid, type, title, message, created_at) 
+            VALUES (?, 'pass_rejected', 'Pass Request Rejected', ?, NOW())`;
+          var notifMsg = `Your ${request.passtype} request has been rejected. Reason: ${rejectionReason}`;
+          
+          connection.query(notifSql, [request.uid, notifMsg], function (err, notifResult) {
+            connection.release();
+            req.flash('message', 'Pass request rejected');
+            res.redirect('/admin/passrequests');
+          });
+        });
+      });
+    });
+  } catch (err) {
+    res.clearCookie("jwt");
+    req.flash('message', 'Session expired');
+    return res.redirect('/loginpanel');
+  }
+});
 
 
 const PORT = process.env.PORT || 3000;

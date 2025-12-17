@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Pass - Student Portal</title>
+    <link rel="stylesheet" href="/stylesheets/studentportal.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="/images/4174.png">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <button class="sidebar-close" onclick="toggleSidebar()">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="logo">
+            <img src="/images/4174.png" alt="Logo">
+            <h2>Gate Pass</h2>
+        </div>
+        
+        <ul class="nav-links">
+            <li>
+                <a href="/student/dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="/student/profile">
+                    <i class="fas fa-user"></i>
+                    <span>My Profile</span>
+                </a>
+            </li>
+            <li>
+                <a href="/student/attendance">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Attendance</span>
+                </a>
+            </li>
+            <li>
+                <a href="/student/passhistory">
+                    <i class="fas fa-history"></i>
+                    <span>Pass History</span>
+                </a>
+            </li>
+            <li>
+                <a href="/student/requestpass" class="active">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>Request Pass</span>
+                </a>
+            </li>
+            <li>
+                <a href="/student/notifications">
+                    <i class="fas fa-bell"></i>
+                    <span>Notifications</span>
+                </a>
+            </li>
+        </ul>
+        
+        <div class="user-info">
+            <div class="user-detail">
+                <img src="<%= student.path || '/images/default-avatar.png' %>" alt="Profile">
+                <div>
+                    <div class="name"><%= student.sname %></div>
+                    <div class="role"><%= student.uid %></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="topbar">
+            <div class="page-title">
+                <h1>Request Pass</h1>
+                <p>Submit a new pass request for approval</p>
+            </div>
+            
+            <div class="user-actions">
+                <a href="/student/notifications" class="notification-btn">
+                    <i class="fas fa-bell"></i>
+                </a>
+                <a href="/student/logout" class="logout-btn" style="text-decoration: none;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </a>
+            </div>
+        </div>
+        
+        <% if(message && message.length > 0){ %>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <%- message %>
+            </div>
+        <% } %>
+        
+        <!-- Check for restrictions or active pass -->
+        <% if(student.status === 'Restrict') { %>
+            <div class="alert alert-danger">
+                <i class="fas fa-ban"></i>
+                <strong>Account Restricted!</strong> You cannot request passes while your account is restricted. Please contact the hostel administrator.
+            </div>
+        <% } else if(activePass) { %>
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Active Pass Exists!</strong> You already have an active <%= activePass.passtype %>. Please complete it before requesting a new one.
+            </div>
+            
+            <div class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-id-card"></i> Current Active Pass</h2>
+                </div>
+                
+                <div class="pass-card">
+                    <div class="pass-type"><%= activePass.passtype %></div>
+                    <div class="pass-status">
+                        <i class="fas fa-door-open"></i> Pass Active
+                    </div>
+                    <div class="pass-details">
+                        <div class="pass-detail-item">
+                            <label>Approved On</label>
+                            <span><%= activePass.approvaldt || 'N/A' %></span>
+                        </div>
+                        <div class="pass-detail-item">
+                            <label>Gate Out</label>
+                            <span><%= activePass.outdatetime || 'Pending' %></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <% } else { %>
+            <!-- Pass Request Form -->
+            <div class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-file-alt"></i> New Pass Request</h2>
+                </div>
+                
+                <form action="/student/requestpass" method="POST">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-user"></i> Student Name</label>
+                            <input type="text" value="<%= student.sname %>" readonly style="background: #f5f5f5;">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-id-badge"></i> Student UID</label>
+                            <input type="text" value="<%= student.uid %>" readonly style="background: #f5f5f5;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-building"></i> Department</label>
+                            <input type="text" value="<%= student.dept || 'N/A' %>" readonly style="background: #f5f5f5;">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-phone"></i> Contact Number</label>
+                            <input type="text" value="<%= student.mobileno || 'N/A' %>" readonly style="background: #f5f5f5;">
+                        </div>
+                    </div>
+                    
+                    <hr style="margin: 25px 0; border: none; border-top: 1px solid #eee;">
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-ticket-alt"></i> Pass Type *</label>
+                        <select name="passType" required>
+                            <option value="">Select Pass Type</option>
+                            <option value="City Pass">City Pass (Short Duration)</option>
+                            <option value="Home Pass">Home Pass (Long Duration)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar"></i> Expected Out Date *</label>
+                            <input type="date" name="expectedOutDate" required min="<%= new Date().toISOString().split('T')[0] %>">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-clock"></i> Expected Out Time *</label>
+                            <input type="time" name="expectedOutTime" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar-check"></i> Expected Return Date *</label>
+                            <input type="date" name="expectedReturnDate" required min="<%= new Date().toISOString().split('T')[0] %>">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-clock"></i> Expected Return Time</label>
+                            <input type="time" name="expectedReturnTime">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-map-marker-alt"></i> Destination/Purpose *</label>
+                        <textarea name="reason" rows="3" required placeholder="Enter your destination and purpose of visit..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-phone-alt"></i> Emergency Contact Number *</label>
+                        <input type="tel" name="emergencyContact" required placeholder="Parent/Guardian contact number" value="<%= student.parentnumber || '' %>">
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                        <p style="font-size: 13px; color: #666; margin: 0;">
+                            <i class="fas fa-info-circle" style="color: #667eea;"></i>
+                            <strong>Note:</strong> Your pass request will be reviewed by the hostel authority. You will receive a notification once it's approved. Make sure to collect your pass from the hostel office before leaving.
+                        </p>
+                    </div>
+                    
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-paper-plane"></i> Submit Request
+                    </button>
+                </form>
+            </div>
+        <% } %>
+        
+        <!-- Pending Requests -->
+        <% if(pendingRequests && pendingRequests.length > 0) { %>
+            <div class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-hourglass-half"></i> Pending Requests</h2>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Pass Type</th>
+                            <th>Requested On</th>
+                            <th>Expected Out</th>
+                            <th>Expected Return</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% pendingRequests.forEach(function(req) { %>
+                            <tr>
+                                <td>#<%= req.requestid %></td>
+                                <td><%= req.passtype %></td>
+                                <td><%= req.created_at %></td>
+                                <td><%= req.expected_out %></td>
+                                <td><%= req.expected_return %></td>
+                                <td>
+                                    <span class="status-badge pending">
+                                        <i class="fas fa-clock"></i> Pending
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="/student/cancelrequest/<%= req.requestid %>" 
+                                       onclick="return confirm('Are you sure you want to cancel this request?')"
+                                       style="color: #ef4444; text-decoration: none;">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+        
+        <!-- Pass Guidelines -->
+        <div class="content-section">
+            <div class="section-header">
+                <h2><i class="fas fa-book"></i> Pass Guidelines</h2>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div style="padding: 20px; background: rgba(102, 126, 234, 0.1); border-radius: 10px; border-left: 4px solid #667eea;">
+                    <h4 style="color: #667eea; margin-bottom: 10px;"><i class="fas fa-city"></i> City Pass</h4>
+                    <ul style="font-size: 13px; color: #666; padding-left: 20px;">
+                        <li>For short visits within the city</li>
+                        <li>Maximum duration: Same day return</li>
+                        <li>Must return before hostel closing time</li>
+                        <li>Restricted students cannot apply</li>
+                    </ul>
+                </div>
+                
+                <div style="padding: 20px; background: rgba(34, 197, 94, 0.1); border-radius: 10px; border-left: 4px solid #22c55e;">
+                    <h4 style="color: #22c55e; margin-bottom: 10px;"><i class="fas fa-home"></i> Home Pass</h4>
+                    <ul style="font-size: 13px; color: #666; padding-left: 20px;">
+                        <li>For visiting home/hometown</li>
+                        <li>Requires parent contact verification</li>
+                        <li>Submit request at least 24 hours before</li>
+                        <li>Extended stays require special approval</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('active');
+            document.querySelector('.sidebar-overlay').classList.toggle('active');
+            document.body.style.overflow = document.querySelector('.sidebar').classList.contains('active') ? 'hidden' : '';
+        }
+    </script>
+</body>
+</html>
