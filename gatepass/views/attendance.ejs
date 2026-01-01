@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Daily Attendance - Upgraded UI/UX</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        
+        /* Navbar */
+        .navbar-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            padding: 0.8rem 2rem;
+        }
+        .navbar-brand-custom { color: white !important; font-weight: 700; background: rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 0.5rem 1rem; }
+        .nav-link { color: rgba(255, 255, 255, 0.95) !important; font-weight: 500; }
+
+        /* Navigation */
+        .block-tabs { gap: 10px; }
+        .block-tabs .nav-link {
+            font-size: 1.1rem; font-weight: 700; color: #444 !important;
+            background-color: #fff; border: 1px solid #ddd; border-radius: 8px;
+            padding: 10px 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: all 0.2s;
+        }
+        .block-tabs .nav-link:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .block-tabs .nav-link.active {
+            background-color: #6c5ce7 !important; color: white !important;
+            border-color: #6c5ce7; box-shadow: 0 4px 10px rgba(108, 92, 231, 0.5);
+        }
+        .floor-pills .nav-link {
+            font-weight: 600; color: #555 !important; background-color: #fff;
+            border: 1px solid #ccc; border-radius: 20px; padding: 8px 20px; margin-right: 10px;
+        }
+        .floor-pills .nav-link.active {
+            background-color: #0984e3 !important; color: white !important;
+            border-color: #0984e3;
+        }
+
+        /* Sidebar Stats */
+        .stat-card {
+            background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 6px solid #ddd;
+        }
+        .stat-title { font-size: 0.85rem; color: #666; font-weight: 700; text-transform: uppercase; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; color: #333; }
+        
+        /* Bed Grid */
+        .room-card {
+            background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 20px; padding: 15px; border-top: 5px solid #a29bfe;
+        }
+        .bed-box {
+            height: 90px; border-radius: 8px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; cursor: pointer;
+            background: #f8f9fa; border: 2px solid #ced4da; position: relative; transition: all 0.1s;
+        }
+        .bed-box:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(0,0,0,0.15); border-color: #888; }
+        
+        /* STATUS COLORS */
+        .st-Present { background: #d4edda; border-color: #28a745; color: #155724; } /* Green (Present) */
+        .st-Absent  { background: #f8d7da; border-color: #dc3545; color: #721c24; } /* Red (Absent) */
+        .st-Home    { background: #cfe2ff; border-color: #0d6efd; color: #084298; } /* Blue/Info (Homepass) */
+        .st-Pending { background: #fff; border-color: #ccc; border-style: dashed; }
+        
+        .bed-num { position: absolute; top: 2px; right: 5px; font-size: 0.7rem; font-weight: bold; color: #666; }
+
+        /* Tooltip style */
+        .custom-tooltip {
+            z-index: 10000;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-custom mb-4">
+        <div class="container-fluid">
+            <a href="#" class="navbar-brand navbar-brand-custom"><i class="fas fa-user-shield me-2"></i><%=role%></a>
+            <div class="navbar-nav ms-auto">
+                <a href="/daterange" class="nav-item nav-link">Home</a>
+                <a href="/logout" class="nav-item nav-link ms-2">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+        <div class="row">
+            
+            <div class="col-lg-3 col-md-4">
+                <h5 class="fw-bold text-secondary mb-3"><i class="fas fa-chart-pie me-2"></i>Dashboard</h5>
+                
+                <div class="stat-card" style="border-left-color: #6c5ce7;">
+                    <div class="stat-title">Total Students</div>
+                    <div class="stat-value"><%= stats.Total %></div>
+                    <small class="text-muted">In Database</small>
+                </div>
+
+                <div class="stat-card" style="border-left-color: #28a745;">
+                    <div class="stat-title text-success">Present (In)</div>
+                    <div class="stat-value"><%= stats.InHostel || 0 %></div>
+                    <small class="text-muted">Students Marked Present</small>
+                </div>
+
+                <div class="stat-card" style="border-left-color: #dc3545;">
+                    <div class="stat-title text-danger">Absent (Out)</div>
+                    <div class="stat-value"><%= stats.AtCollege || 0 %></div>
+                    <small class="text-muted">Students Marked Absent</small>
+                </div>
+
+                <div class="stat-card" style="border-left-color: #0d6efd;">
+                    <div class="stat-title text-primary">Home Pass</div>
+                    <div class="stat-value"><%= (stats.Home || 0) %></div>
+                    <small class="text-muted">On Authorized Leave</small>
+                </div>
+            </div>
+
+            <div class="col-lg-9 col-md-8">
+                
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm border">
+                    <ul class="nav nav-pills block-tabs" id="blockTabs">
+                        <li class="nav-item"><button class="nav-link active" onclick="switchBlock('A')"><i class="fas fa-building me-2"></i>Block A</button></li>
+                        <li class="nav-item"><button class="nav-link" onclick="switchBlock('B')"><i class="fas fa-building me-2"></i>Block B</button></li>
+                    </ul>
+
+                    <ul class="nav nav-pills floor-pills mt-2 mt-md-0" id="floorPills"></ul>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+                    <h5 class="text-dark fw-bold mb-0" id="gridTitle">Rooms</h5>
+                    <div class="small">
+                        <span class="badge bg-success border border-success">Present</span>
+                        <span class="badge bg-danger border border-danger">Absent</span>
+                        <span class="badge bg-primary border border-primary">Home Pass</span>
+                    </div>
+                </div>
+
+                <div class="row" id="roomsContainer"></div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="actionModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+                
+                <div id="modalHeader" class="modal-header text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-user-circle me-2"></i>Student Profile</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body text-center p-4">
+                    
+                    <div class="mb-3 position-relative d-inline-block">
+                        <img id="mPhoto" src="/images/avatar_placeholder.png" 
+                             class="rounded-circle border border-4 border-white shadow" 
+                             style="width: 100px; height: 100px; object-fit: cover;" 
+                             alt="Student Photo"
+                             onerror="this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png'"> 
+                    </div>
+
+                    <h4 class="fw-bold text-dark mb-1" id="mName">--</h4>
+                    <div class="badge bg-light text-secondary border mb-3 p-2">
+                        <span id="mDept">--</span> - <span id="mYear">--</span>
+                    </div>
+
+                    <div class="row text-start bg-light rounded p-3 mb-4 mx-1 border">
+                        <div class="col-6 mb-2">
+                            <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">UID</small><br>
+                            <strong class="text-dark" id="mUID">--</strong>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Room/Bed</small><br>
+                            <strong class="text-dark" id="mRoom">--</strong>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Parent Contact</small><br>
+                            <strong class="text-dark"><i class="fas fa-phone-alt me-1 text-success"></i> <span id="mParent">--</span></strong>
+                        </div>
+                        
+                        <div class="col-6 mt-2">
+                            <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Mess Type</small><br>
+                            <span id="mMess">--</span>
+                        </div>
+                        <div class="col-6 mt-2">
+                            <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Fee Status</small><br>
+                            <span id="mFee">--</span>
+                        </div>
+                    </div>
+
+                    <hr class="text-muted">
+
+                    <h6 class="text-start text-muted text-uppercase small fw-bold mb-3">Mark Today's Status</h6>
+                    <div class="row g-2 justify-content-center"> 
+                        
+                        <div class="col-6">
+                            <button onclick="saveStatus('Present')" class="btn btn-success w-100 py-2 shadow-sm fw-bold" id="btn-present">
+                                <i class="fas fa-check me-2"></i> Present
+                            </button>
+                        </div>
+                        
+                        <div class="col-6">
+                            <button onclick="saveStatus('Absent')" class="btn btn-danger w-100 py-2 shadow-sm fw-bold" id="btn-absent">
+                                <i class="fas fa-times me-2"></i> Absent
+                            </button>
+                        </div>
+
+                        </div>
+
+                     <div id="loadingIndicator" class="mt-3 text-center text-primary fw-bold" style="display:none;">
+                        <i class="fas fa-spinner fa-spin me-2"></i> Saving Status...
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 1. DATA
+        const rawData = <%- JSON.stringify(serverData) %>;
+        let currentBlock = 'A';
+        let currentFloor = 'Ground';
+        let currentSelection = { uid: null, elementId: null };
+        
+        // Ensure Modal and Tooltips are initialized on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    customClass: 'custom-tooltip',
+                    delay: { "show": 500, "hide": 100 }
+                })
+            });
+        });
+        
+        const modal = new bootstrap.Modal(document.getElementById('actionModal'));
+
+        // Organize Data
+        const hostelMap = {};
+        rawData.forEach(student => {
+            const b = student.block || 'A';
+            const f = student.floor || 'Ground';
+            const r = student.room_no || '000';
+            if(!hostelMap[b]) hostelMap[b] = {};
+            if(!hostelMap[b][f]) hostelMap[b][f] = {};
+            if(!hostelMap[b][f][r]) hostelMap[b][f][r] = [];
+            hostelMap[b][f][r].push(student);
+        });
+
+        // 2. NAV LOGIC
+        function switchBlock(block) {
+            currentBlock = block;
+            document.querySelectorAll('#blockTabs .nav-link').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            renderPills();
+        }
+
+        function renderPills() {
+            const container = document.getElementById('floorPills');
+            container.innerHTML = '';
+            const floors = (currentBlock === 'A') ? ['Ground', 'First', 'Second'] : ['Ground', 'First'];
+            
+            floors.forEach(f => {
+                const isActive = (f === currentFloor) ? 'active' : '';
+                container.innerHTML += `<li class="nav-item"><button class="nav-link ${isActive}" onclick="switchFloor('${f}', this)">${f} Floor</button></li>`;
+            });
+            renderGrid();
+        }
+
+        function switchFloor(floor, el) {
+            currentFloor = floor;
+            document.querySelectorAll('#floorPills .nav-link').forEach(e => e.classList.remove('active'));
+            el.classList.add('active');
+            renderGrid();
+        }
+
+        // 3. GRID RENDERER
+        function renderGrid() {
+            const container = document.getElementById('roomsContainer');
+            document.getElementById('gridTitle').innerText = `Displaying: Block ${currentBlock} - ${currentFloor} Floor`;
+            container.innerHTML = '';
+
+            if(!hostelMap[currentBlock] || !hostelMap[currentBlock][currentFloor]) {
+                container.innerHTML = '<div class="col-12 text-center text-muted mt-5"><h4>No Rooms Found</h4></div>';
+                return;
+            }
+
+            const rooms = Object.keys(hostelMap[currentBlock][currentFloor]).sort();
+
+            rooms.forEach(roomNum => {
+                const students = hostelMap[currentBlock][currentFloor][roomNum];
+                students.sort((a,b) => (a.bed_no > b.bed_no) ? 1 : -1);
+
+                let bedsHtml = '';
+                students.forEach(student => {
+                    // COLOR MAPPING
+                    const statusClass = student.today_status ? `st-${student.today_status}` : 'st-Pending';
+                    let icon = 'fa-user';
+                    if(student.today_status === 'Present') icon = 'fa-check'; 
+                    else if(student.today_status === 'Absent') icon = 'fa-times'; 
+                    else if(student.today_status === 'Home') icon = 'fa-home'; // Still uses home icon if Homepass status is fetched
+
+                    const sJson = JSON.stringify(student).replace(/"/g, '&quot;');
+                    const uniqueId = `bed-${student.uid}`;
+
+                    bedsHtml += `
+                        <div class="col-4">
+                            <div id="${uniqueId}" 
+                                 class="bed-box ${statusClass}" 
+                                 onclick="openModal(${sJson}, '${uniqueId}')"
+                                 data-bs-toggle="tooltip" data-bs-placement="top" 
+                                 title="${student.sname} (${student.uid})">
+                                
+                                <span class="bed-num">${student.bed_no}</span>
+                                <i class="fas ${icon} mb-1"></i>
+                                <small class="text-truncate w-100 px-1 text-center" style="font-size:0.7rem; font-weight:600;">
+                                    ${student.sname ? student.sname.split(' ')[0] : 'Vacant'}
+                                </small>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML += `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="room-card">
+                            <div class="room-header text-center border-bottom pb-2">Room ${roomNum}</div>
+                            <div class="row g-2 pt-2">${bedsHtml}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // 4. OPEN MODAL
+        function openModal(student, elementId) {
+            currentSelection = { uid: student.uid, elementId: elementId };
+            
+            // --- DYNAMIC MODAL HEADER COLOR ---
+            const header = document.getElementById('modalHeader');
+            const currentStatus = student.today_status || 'Pending';
+            
+            let bgClass = 'bg-primary'; 
+            if (currentStatus === 'Present') { bgClass = 'bg-success'; } 
+            else if (currentStatus === 'Absent') { bgClass = 'bg-danger'; } 
+            else if (currentStatus === 'Home') { bgClass = 'bg-info'; } 
+
+            header.className = `modal-header text-white ${bgClass}`;
+            header.style.background = ''; // Clear gradient for solid color
+
+            // Profile Data Injection
+            document.getElementById('mName').innerText = student.sname || 'Unknown';
+            document.getElementById('mUID').innerText = student.uid;
+            document.getElementById('mDept').innerText = student.dept || '--';
+            document.getElementById('mYear').innerText = student.year || '--';
+            document.getElementById('mRoom').innerText = `${student.room_no} - Bed ${student.bed_no}`;
+            document.getElementById('mParent').innerText = student.parentnumber || 'No Data';
+
+            // Extra Info
+            document.getElementById('mMess').innerText = student.mess_type || 'Veg';
+            document.getElementById('mFee').innerText = student.hostel_fee_status || 'Pending';
+            document.getElementById('mPhoto').src = student.path || '/images/avatar_placeholder.png';
+
+            modal.show();
+        }
+
+        // 5. SAVE STATUS
+        function saveStatus(status) {
+            if(!currentSelection.uid) {
+                alert("Error: No student selected.");
+                return;
+            }
+            
+            // Show loading indicator and disable buttons
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('btn-present').disabled = true;
+            document.getElementById('btn-absent').disabled = true;
+
+            fetch('/api/mark-attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid: currentSelection.uid, status: status })
+            })
+            .then(res => {
+                if (!res.ok) { throw new Error("Server returned " + res.status); }
+                return res.json();
+            })
+            .then(data => {
+                if(data.success) {
+                    modal.hide();
+                    // Reload for clean state and counter update
+                    window.location.reload(); 
+                } else {
+                    alert('Server Error: ' + (data.message || "Unknown error occurred."));
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Connection Failed. Please check the network or server status.");
+            })
+            .finally(() => {
+                // Ensure indicator is hidden even if reload fails (for better UX)
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('btn-present').disabled = false;
+                document.getElementById('btn-absent').disabled = false;
+            });
+        }
+
+        // Init
+        renderPills();
+    </script>
+</body>
+</html>
