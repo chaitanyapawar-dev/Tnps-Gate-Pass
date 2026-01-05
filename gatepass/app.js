@@ -2318,22 +2318,24 @@ app.post('/loginpanel', function (req, res) {
 
 });
 app.use(cookieParser());
+
+// --------------------------------------------------------------------------------------------------------------
 function verifyjwt(req, res, next) {
-  const tokenadmin = req.cookies.jwt;
-  try {
-    const decode = jwt.verify(tokenadmin, secretkey);
-
-    role = decode.role;
-
-    next();
-  }
-  catch (err) {
-    res.clearCookie("jwt");
-    return res.redirect('/loginpanel');
-  }
+    const tokenadmin = req.cookies.jwt;
+    if (!tokenadmin) {
+        return res.redirect('/loginpanel');
+    }
+    try {
+        const decode = jwt.verify(tokenadmin, secretkey);
+        // CRITICAL FIX: Attach the decoded data to the request object
+        req.decode = decode; 
+        next();
+    } catch (err) {
+        res.clearCookie("jwt");
+        return res.redirect('/loginpanel');
+    }
 };
-
-
+// --------------------------------------------------------------------------------------------------------------------
 
 
 
@@ -2597,94 +2599,68 @@ app.get('/deacivatepass/:id', verifyjwt, function (req, res) {
 
 
 });
-
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //importing excel
+// Optimized Excel Import for Integrated Schema
+// Route to display the list of hostel students
+// Full Updated Route for Automatic Room Allocation
 app.post('/import-excel', uploadFile.single('import-excel'), async function (req, res) {
-  if (!req.file) {
-    console.error("File not uploaded or an error occurred during upload.");
-    return res.render('studentsupdate', {message: "Error: No file selected or file upload failed."});
-  }
-  console.log(req.file.path)
-  await readXlsxFile(req.file.path).then((rows) => {
-    rows.shift()
-    dbbconnection.getConnection((error, connection) => {
-      if (error) throw error;
-      else {
-        let sql = 'INSERT INTO studentdetails (`uid`, `sname`, `email`, `dept`, `address`, `year`, `category`, `gender`, `mobileno`, `dob`, `academicyear`, `path`,`status`,`parentname`,`parentnumber`,`other1`,`other2`,`other3`) VALUES ?'
-        connection.query(sql, [rows], (error, response) => {
-          if (error) throw error;
-          req.flash('message', 'Added Successfully');
-          res.redirect('/studentsupdate');
-        })
-      }
-      connection.release();
-    })
-  })
-
-})
-
-app.get('/blankcsv', function (req, res) {
-  res.download('public/documents/demoupload.xlsx');
-});
-
-//date range for Hostel out students
-app.post('/hosteloutdaterange', function (req, res) {
-  const tokenadmin = req.cookies.jwt;
-  try {
+    const tokenadmin = req.cookies.jwt;
     const decode = jwt.verify(tokenadmin, secretkey);
+    const role = decode.role;
 
-    role = decode.role;
-    dbbconnection.getConnection(function (err, connection) {
-      if (role == "BoysHostelAdmin") {
-        var datefrom = req.body.datefrom;
-        var dateto = req.body.dateto;
-        var sql = "select log.logid,stu.uid,stu.sname,log.hostelintime,log.approvaldt,log.passtype from log_details1 as log join studentdetails as stu where stu.uid=log.uid and stu.gender='MALE' and hostelintime is null and date(log.approvaldt) between date('" + datefrom + "') and date('" + dateto + "') and category='Hostel' ORDER BY log.logid desc";
-        connection.query(sql, function (err, result) {
-          if (err) throw err;
-          else {
-            res.render(__dirname + '/views/outstudents', { result: result, message: req.flash('message') });
-          }
+    if (!req.file) {
+        // Fetch list to prevent EJS error if no file selected
+        dbbconnection.getConnection((err, connection) => {
+            let sql = (role === "BoysHostelAdmin") ? "SELECT * FROM studentdetails WHERE gender='MALE' AND category='Hostel'" : 
+                      (role === "GirlsHostelAdmin") ? "SELECT * FROM studentdetails WHERE gender='FEMALE' AND category='Hostel'" : 
+                      "SELECT * FROM studentdetails WHERE category='Hostel'";
+            
+            connection.query(sql, (err, students) => {
+                connection.release();
+                return res.render(__dirname + '/views/studentsupdate', { 
+                    result: students, 
+                    message: "Error: No file selected." 
+                });
+            });
         });
-      }
-      else if (role == "GirlsHostelAdmin") {
-        var datefrom = req.body.datefrom;
-        var dateto = req.body.dateto;
-        var sql = "select log.logid,stu.uid,stu.sname,log.hostelintime,log.approvaldt,log.passtype from log_details1 as log join studentdetails as stu where stu.uid=log.uid and stu.gender='FEMALE' and hostelintime is null and date(log.approvaldt) between date('" + datefrom + "') and date('" + dateto + "') and category='Hostel' ORDER BY log.logid desc";
-        connection.query(sql, function (err, result) {
-          if (err) throw err;
-          else {
-            res.render(__dirname + '/views/outstudents', { result: result, message: req.flash('message') });
-          }
+        return;
+    }
+
+    try {
+        const rows = await readXlsxFile(req.file.path);
+        rows.shift(); // Remove headers
+
+        dbbconnection.getConnection((error, connection) => {
+            if (error) throw error;
+
+            // UPDATED SQL: 20 Columns including room_no and bed_no
+            let sql = `INSERT INTO studentdetails 
+                (uid, sname, email, dept, address, year, category, gender, mobileno, dob, academicyear, path, status, parentname, parentnumber, room_no, bed_no, other1, other2, other3) 
+                VALUES ? 
+                ON DUPLICATE KEY UPDATE 
+                category='Hostel',
+                room_no=VALUES(room_no),
+                bed_no=VALUES(bed_no)`;
+
+            connection.query(sql, [rows], (error, response) => {
+                connection.release();
+                if (error) {
+                    console.error("Excel Import Error:", error);
+                    req.flash('message', 'Error: Ensure Excel has exactly 20 columns.');
+                    return res.redirect('/studentsupdate');
+                }
+                req.flash('message', 'Students Imported and Allocated Successfully');
+                res.redirect('/studentsupdate');
+            });
         });
-      }
-      else if (role == "SuperID") {
-        var datefrom = req.body.datefrom;
-        var dateto = req.body.dateto;
-        var sql = "select log.logid,stu.uid,stu.sname,log.hostelintime,log.approvaldt,log.passtype from log_details1 as log join studentdetails as stu where stu.uid=log.uid and hostelintime is null and date(log.approvaldt) between date('" + datefrom + "') and date('" + dateto + "') and category='Hostel' ORDER BY log.logid desc";
-        connection.query(sql, function (err, result) {
-          if (err) throw err;
-          else {
-            res.render(__dirname + '/views/outstudents', { result: result, message: req.flash('message') });
-          }
-        });
-      }
-      else {
-        req.flash('message', 'Unauthorised Access');
-        res.redirect('/loginpanel');
-      }
-
-      connection.release();
-    });
-
-  } catch (err) {
-    res.clearCookie("jwt");
-    req.flash('message', 'Login failed');
-    return res.redirect('/loginpanel');
-  }
-
-
+    } catch (err) {
+        console.error("Excel Parsing Error:", err);
+        req.flash('message', 'Error reading Excel file.');
+        res.redirect('/studentsupdate');
+    }
 });
-
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //date range for Gate out Students
 
 app.post('/Gateoutdaterange', function (req, res) {
@@ -4284,120 +4260,154 @@ app.post('/api/admin/bookings/:id/reject', verifyjwt, function (req, res) {
 // =============================================================
 // START: ATTENDANCE MODULE (Copy to bottom of app.js)
 // =============================================================
+// =============================================================
+// ATTENDANCE GRID & ROOM ALLOCATION SECTION
+// =============================================================
+// ==========================================
+// ATTENDANCE GRID & ROOM ALLOCATION MODULE
+// ==========================================
 
-// 1. SHOW ATTENDANCE PAGE (GET)
-// This fixes the "Cannot GET /attendance" error
+// 1. Permanent Grid View with Auto-Status Sync
+// ==========================================
+// ATTENDANCE GRID & ROOM ALLOCATION MODULE
+// ==========================================
+
+/**
+ * 1. Main Attendance Grid Route
+ * Fetches the permanent building layout and syncs with live student data
+ */
 app.get('/attendance', verifyjwt, function (req, res) {
-  const tokenadmin = req.cookies.jwt;
-  try {
-      const decode = jwt.verify(tokenadmin, secretkey);
-      const role = decode.role;
+    // Middleware provides user data via req.decode
+    if (!req.decode || !req.decode.role) {
+        res.clearCookie("jwt");
+        return res.redirect('/loginpanel');
+    }
+    const role = req.decode.role;
 
-      // Security Check
-      if (["SuperID", "BoysHostelAdmin", "GirlsHostelAdmin", "Hostelauthority"].includes(role)) {
-          
-          dbbconnection.getConnection(function (err, connection) {
-              if (err) { console.error("DB Connection Error:", err); return res.redirect('/loginpanel'); }
+    dbbconnection.getConnection(function (err, connection) {
+        if (err) {
+            console.error("DB Connection Error:", err);
+            return res.redirect('/loginpanel');
+        }
 
-              // 1. Fetch Students & Their Status
-              let sqlStudents = `
-                  SELECT s.*, IFNULL(d.status, 'Pending') as today_status 
-                  FROM studentdetails s 
-                  LEFT JOIN daily_attendance d ON s.uid = d.uid AND d.date = CURDATE()
-                  WHERE s.category='Hostel'
-              `;
+        // Logic: 
+        // 1. vg: Fetch all beds from v_room_grid (The Constants)
+        // 2. s: LEFT JOIN matching students currently in studentdetails
+        // 3. CASE: Syncs Sick Leave and Home Pass status automatically today
+        let sql = `
+            SELECT 
+                vg.room_name, vg.block, vg.floor, vg.bed_letter,
+                s.uid, s.sname, s.path, s.dept, s.year, s.parentnumber, s.mess_type,
+                CASE 
+                    WHEN EXISTS (SELECT 1 FROM sick_leave_logs sl WHERE sl.uid = s.uid AND sl.logdate = CURDATE()) THEN 'Sick'
+                    WHEN EXISTS (SELECT 1 FROM log_details1 l WHERE l.uid = s.uid AND l.status = 'ACTIVE') THEN 'Home'
+                    ELSE IFNULL((SELECT status FROM daily_attendance da WHERE da.uid = s.uid AND da.date = CURDATE()), 'Pending')
+                END AS today_status
+            FROM v_room_grid vg
+            LEFT JOIN studentdetails s ON vg.room_name = s.room_no AND vg.bed_letter = s.bed_no
+            WHERE 1=1
+        `;
 
-              if (role === "BoysHostelAdmin") sqlStudents += " AND s.gender='MALE'";
-              else if (role === "GirlsHostelAdmin") sqlStudents += " AND s.gender='FEMALE'";
-              
-              sqlStudents += " ORDER BY s.room_no ASC, s.bed_no ASC";
+        // Role-based filtering: Boys Admin sees Block A, Girls Admin sees Block B
+        if (role === "BoysHostelAdmin") sql += " AND vg.block = 'A'";
+        else if (role === "GirlsHostelAdmin") sql += " AND vg.block = 'B'";
 
-              // 2. Fetch Dashboard Statistics
-              let sqlStats = `
-                  SELECT 
-                      COUNT(*) as Total,
-                      SUM(CASE WHEN d.status = 'Present' THEN 1 ELSE 0 END) as InHostel,
-                      SUM(CASE WHEN d.status = 'Absent' THEN 1 ELSE 0 END) as AtCollege,
-                      SUM(CASE WHEN d.status = 'Sick' THEN 1 ELSE 0 END) as Sick
-                  FROM studentdetails s
-                  LEFT JOIN daily_attendance d ON s.uid = d.uid AND d.date = CURDATE()
-                  WHERE s.category='Hostel'
-              `;
-              
-              if (role === "BoysHostelAdmin") sqlStats += " AND s.gender='MALE'";
-              else if (role === "GirlsHostelAdmin") sqlStats += " AND s.gender='FEMALE'";
+        sql += " ORDER BY vg.room_name ASC, vg.bed_letter ASC";
 
-              // Execute Queries
-              connection.query(sqlStudents, function (err, resultStudents) {
-                  if (err) { connection.release(); console.error(err); return; }
+        connection.query(sql, function (err, result) {
+            if (err) { 
+                connection.release(); 
+                throw err; 
+            }
 
-                  connection.query(sqlStats, function (err, resultStats) {
-                      connection.release();
-                      
-                      // Render Page
-                      res.render(__dirname + '/views/attendance', { 
-                          serverData: resultStudents,
-                          stats: resultStats[0], 
-                          role: role,
-                          message: req.flash('message')
-                      });
-                  });
-              });
-          });
-      } else {
-          req.flash('message', 'Unauthorised Access');
-          res.redirect('/loginpanel');
-      }
-  } catch (err) {
-      res.clearCookie("jwt");
-      return res.redirect('/loginpanel');
-  }
+            // Calculate Statistics for the Sidebar
+            const stats = {
+                Total: result.filter(x => x.uid).length,
+                InHostel: result.filter(x => x.today_status === 'Present').length,
+                AtCollege: result.filter(x => x.today_status === 'Absent').length,
+                Home: result.filter(x => x.today_status === 'Home').length
+            };
+
+            connection.release();
+            res.render(__dirname + '/views/attendance', { 
+                serverData: result, 
+                stats: stats,
+                role: role, 
+                message: req.flash('message') 
+            });
+        });
+    });
 });
 
-// 2. SAVE ATTENDANCE (POST)
-// This fixes the "Server returned 404" or "Connection Failed" error
+/**
+ * 2. Search API for Allocation
+ * Returns students who are in 'Hostel' category but have no room assigned
+ */
+app.get('/api/search-unallocated', verifyjwt, (req, res) => {
+    const term = req.query.term || ''; 
+    dbbconnection.getConnection(function (err, connection) {
+        if (err) return res.status(500).json([]);
+        
+        const sql = `
+            SELECT uid, sname 
+            FROM studentdetails 
+            WHERE category = 'Hostel' 
+            AND (room_no IS NULL OR room_no = '') 
+            AND (uid LIKE ? OR sname LIKE ?) 
+            LIMIT 50`;
+
+        connection.query(sql, [`%${term}%`, `%${term}%`], (err, results) => {
+            connection.release();
+            if (err) return res.status(500).json([]);
+            res.json(results);
+        });
+    });
+});
+
+/**
+ * 3. Assignment / De-allocation API
+ * Links a student to a room/bed constant or clears it (if room_no is null)
+ */
+app.post('/api/assign-room', verifyjwt, (req, res) => {
+    const { uid, room_no, bed_no } = req.body;
+    
+    if(!uid) return res.status(400).json({ success: false, message: "UID is required" });
+
+    dbbconnection.getConnection(function (err, connection) {
+        if (err) return res.status(500).json({ success: false });
+
+        const sql = "UPDATE studentdetails SET room_no = ?, bed_no = ? WHERE uid = ?";
+        connection.query(sql, [room_no, bed_no, uid], (err, result) => {
+            connection.release();
+            if (err) return res.json({ success: false, message: "Database Error" });
+            res.json({ success: true });
+        });
+    });
+});
+
+/**
+ * 4. Manual Attendance API
+ * Marks Present/Absent with a duplicate key check for today's date
+ */
 app.post('/api/mark-attendance', verifyjwt, (req, res) => {
-  const { uid, status } = req.body;
-  
-  if(!uid || !status) {
-      return res.status(400).json({ success: false, message: "Missing Data" });
-  }
+    const { uid, status } = req.body;
+    const markedBy = req.decode.adminname;
 
-  try {
-      const tokenadmin = req.cookies.jwt;
-      const decode = jwt.verify(tokenadmin, secretkey);
-      const markedBy = decode.adminname || 'Admin';
+    dbbconnection.getConnection(function (err, connection) {
+        if (err) return res.status(500).json({ success: false });
 
-      dbbconnection.getConnection((err, connection) => {
-          if (err) return res.status(500).json({ success: false, message: "DB Error" });
+        const sql = `
+            INSERT INTO daily_attendance (uid, date, status, marked_by) 
+            VALUES (?, CURDATE(), ?, ?) 
+            ON DUPLICATE KEY UPDATE status = ?, marked_by = ?`;
 
-          const checkSql = "SELECT * FROM daily_attendance WHERE uid=? AND date=CURDATE()";
-          
-          connection.query(checkSql, [uid], (err, result) => {
-              if (err) { connection.release(); return res.status(500).json({ success: false }); }
-
-              if(result.length > 0) {
-                  // Update existing
-                  const updateSql = "UPDATE daily_attendance SET status=?, marked_by=? WHERE uid=? AND date=CURDATE()";
-                  connection.query(updateSql, [status, markedBy, uid], (err) => {
-                      connection.release();
-                      res.json({ success: true });
-                  });
-              } else {
-                  // Insert new
-                  const insertSql = "INSERT INTO daily_attendance (uid, date, status, marked_by) VALUES (?, CURDATE(), ?, ?)";
-                  connection.query(insertSql, [uid, status, markedBy], (err) => {
-                      connection.release();
-                      res.json({ success: true });
-                  });
-              }
-          });
-      });
-  } catch(e) {
-      return res.status(401).json({ success: false, message: "Auth Error" });
-  }
+        connection.query(sql, [uid, status, markedBy, status, markedBy], (err) => {
+            connection.release();
+            if (err) return res.status(500).json({ success: false });
+            res.json({ success: true });
+        });
+    });
 });
-
 // =============================================================
 // END: ATTENDANCE MODULE
 // =============================================================

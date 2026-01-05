@@ -110,11 +110,11 @@
         <div style="text-align: center;">
           <i class="fas fa-heartbeat scan-icon"></i>
           <h2 style="color: #333; margin-bottom: 1rem;">Sick Leave Registration</h2>
-          <p class="instruction-text">Scan student ID card or enter UID</p>
+          <p class="instruction-text">Scan student ID card or enter UID manually</p>
           
           <div id="pp"></div>
           
-          <div id="staticuid" class="manual-uid-input">
+          <div id="staticuid" hidden class="manual-uid-input">
             <div for="inp" class="inp">
               <input type="text" id="inp" placeholder="&nbsp;">
               <span class="label text-dark">Enter UID</span>
@@ -128,9 +128,14 @@
             </div>
           </div>
 
+          <div style="margin-top: 2rem;">
+            <button class="btn btn-outline-primary" onclick="showdiv()" style="padding: 0.75rem 2rem; border-radius: 10px;">
+              <i class="fas fa-keyboard me-2"></i>Enter UID Manually
+            </button>
+          </div>
 
           <div style="margin-top: 2rem;">
-            <a href="/daterange" class="btn btn-secondary" style="padding: 0.75rem 2rem;  color: white; border-radius: 10px;">
+            <a href="/daterange" class="btn btn-secondary" style="padding: 0.75rem 2rem; border-radius: 10px;">
               <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
             </a>
           </div>
