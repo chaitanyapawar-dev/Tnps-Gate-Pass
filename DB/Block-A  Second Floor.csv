@@ -1,0 +1,77 @@
+Block-A  Second Floor,,,,,,
+Room,Type,Bed,Student Name,Batch,Contact Details,Mess Type
+AS-01,Triple Room,A,Sam Chaco Ruby,CE   -   3rd Year,9567416716,Non-Vegitarian
+AS-01,Triple Room,B,Don Davis,ETC   -   3rd Year,7306222606   /   9404165133 (Davis),Non-Vegitarian
+AS-01,Triple Room,C,Shawan Thomas Bansode,CE   -   2nd Year,-74415761138427.6941,Non-Vegitarian
+AS-02,Single Room,A,Rishab  Suresh Chawhan,,7796542860   /   9158166300 (),Non-Vegitarian
+AS-03,Single Room,A,Neeraj Randhir Ruda,-   4th Year,8879962654   /   7045385230 (Randhir Rude),Non-Vegitarian
+AS-04,Single Room,A,Tanishq Dnyaneshwar  Warghane,-   4th Year,7888045720   /   9822362348 (),Non-Vegitarian
+AS-05,Single Room,A,Aditya Raj,-   4th Year,8340341863   /   9430551873 (Avinash Kumar),Vegitarian
+AS-06,Single Room,A,Shahzab Ali Gatty,CV   -   4th Year,7889847053   /   9906015412 (Anayat),Non-Vegitarian
+AS-07,Single Room,A,Mathew Binoy,-   4th Year,80673879931551.5437,Non-Vegitarian
+AS-08,Single Room,A,Denil Daby,-   4th Year,9496963784   /   9495264618 (),Non-Vegitarian
+AS-09,Single Room,A,Shahid Sameer,IT   -   4th Year,9103843551   /   7006193450 (Tariqpervaiz),Non-Vegitarian
+AS-10,Triple Room,A,Aleen Jess,-   4th Year,,Non-Vegitarian
+AS-10,Triple Room,B,Ashwin Renjith,CE   -   3rd Year,7034839540   /   8289989638 (Renjith),Non-Vegitarian
+AS-10,Triple Room,C,Ayush Benny,-   4th Year,8606304705   /   9747004705 (Benny),Non-Vegitarian
+AS-11,Dormitory,A,Alwyn Paul,-   4th Year,9643351583   /   9999641433 (Paul T Poulose),Non-Vegitarian
+AS-11,Dormitory,B,Ayush  Abhayrao Zurmure,-   4th Year,952755788   /   9921624324 (Abhay),Non-Vegitarian
+AS-11,Dormitory,C,Rowban Philipose Raeney,-   4th Year,-84808701766539.6845,Non-Vegitarian
+AS-11,Dormitory,D,Edwin  T Joseph,-   4th Year,9354353039   /   9599108779 (Tojy),Non-Vegitarian
+AS-12,Single Room,A,Villayat Ali,-   4th Year,7780862928   /   9469113917 (Mohd Sadiq),Vegitarian
+AS-13,Single Room,A,Suyash Rajesh Burile,-   4th Year,7020412386   /   8482970162 (),Non-Vegitarian
+AS-14,Triple Room,A,Nainesh  Vishnu Zod,-   4th Year,9021667707   /   7020860353 (Vishnu),Non-Vegitarian
+AS-14,Triple Room,B,Dishant  Damodhar Kewat,-   4th Year,9284929978   /   8275288448 (Damodhar),Non-Vegitarian
+AS-14,Triple Room,C,Sarthak Sandipraj  Khadse,-   4th Year,9146890567   /   8390106991 (),Vegitarian
+AS-15,Single Room,A,Junaid Hameed,CE   -   3rd Year,8899803162   /   9797709080 (),Vegitarian
+AS-16,Single Room,A,Alvis Joseph Varghes,-   4th Year,9910887719   /   9810596905 (Varghese),Non-Vegitarian
+AS-17,Single Room,A,Jelson Joseph,-   4th Year,9863141632   /   7005617148 (),Non-Vegitarian
+AS-18,Single Room,A,Raunak Singh,IT   -   3rd Year,",  9893608229",Vegitarian
+AS-19,Single Room,A,Stanzin Chosrab,CE   -   2nd Year,9149577621   /   9149577621 (Skarha Tseriwg),Vegitarian
+AS-20,Single Room,A,Junaid Hameed,CE   -   3rd Year,8899803162   /   9797709080 (),Vegitarian
+AS-21,Single Room,A,Nishant Ramdhiraj Uadave,CE   -   3rd Year,7350699782   /   8308337390 (),Vegitarian
+AS-22,Triple Room,A,,,,
+AS-22,Triple Room,B,,,,
+AS-22,Triple Room,C,,,,
+AS-23,Single Room,A,Jay Mandhar Agalave,EE   -   3rd Year,8767074262   /   9881649643 (Manohar),Vegitarian
+AS-24,Single Room,A,Devansh Parag Paltewar,CE   -   3rd Year,9579337727   /   9822644394 (Parag),Vegitarian
+AS-25,Double Room,A,Vedant Bandu Sayare,CE   -   3rd Year,7249179322   /   9881712714 (Bandu),Vegitarian
+AS-25,Double Room,B,Sarthak Purushottam Gore,CE   -   3rd Year,9579452371   /   9011298346 (Purushottam),Non-Vegitarian
+AS-26,Double Room,A,Karan Kundlik Agare,Others   -   3rd Year,8530299117   /   9420867083 (Kundalik),Vegitarian
+AS-26,Double Room,B,Aditya Sachin Tirpude,CV   -   3rd Year,8767021542   /   9765416630 (Sachin),Non-Vegitarian
+AS-27,Single Room,A,Sujal Satish Mahajan,AI   -   3rd Year,8421173790   /   8087230387 (Satish),Vegitarian
+AS-28,Single Room,A,Sahastranshu Shandilya,CE   -   2nd Year,8825237595   /   8409943000 (Rajesh),Vegitarian
+AS-29,Single Room,A,M D Shahanwaz,CE   -   3rd Year,7739343274   /   8294981964 (M D  Sanzar),Non-Vegitarian
+AS-30,Single Room,A,Abishai Edward Amair,CE   -   3rd Year,9420101441   /   7276163234 (Edward Amair),Vegitarian
+AS-31,Not Used,,,,,
+AS-32,Single Room,A,Santosh Dnyaneshwar Ingle,CE   -   3rd Year,9699252425   /   7972947773 (Dnyaneshwar),Vegitarian
+AS-33,Single Room,A,Praful Pyarelal Kharpuriye,CE   -   3rd Year,-46449527891101.4813,Vegitarian
+AS-34,Single Room,A,Shikh Sohel Ahmad Gayas Ahmad,CE   -   3rd Year,8767810322   /   7798978506 (Gayasahmad),Vegitarian
+AS-35,Not Used,,,,,
+AS-36,Single Room,A,Hrushi Sanjog Satao,EE   -   2nd Year,8623033184   /   9970095930 (Sanjog),Vegitarian
+AS-37,Single Room,A,Prathmesh Abhay Vaidya,IT   -   3rd Year,9529792718   /   9637177413 (Abhay),Vegitarian
+AS-38,Single Room,A,Timothypaul K Yerraguntala,-   3rd Year,8767305806   /   7588712646 (Kirankumar),Non-Vegitarian
+AS-39,Single Room,A,Gaurav Prashant Pidukar,EE   -   3rd Year,8788498617   /   9764822063 (Prashant),Non-Vegitarian
+AS-40,Single Room,A,Yash Prashant Gawande,EE   -   3rd Year,8261903434   /   9604472752 (Prashant),Vegitarian
+AS-41,Single Room,A,Joe Francis Joison,Others   -   3rd Year,9319297977   /   9868080356 (Joison),Non-Vegitarian
+AS-42,Single Room,A,Avinash Shrikrushna Wankhade,IT   -   3rd Year,9284844100   /   9834608450 (Shrikrushna),Vegitarian
+AS-43,Single Room,A,Karan Sanjay Bhandarkar,Others   -   3rd Year,7066875738   /   9764253499 (Sanjay),Vegitarian
+AS-44,Triple Room,A,Paurush Ghansham Nirwan,ME   -   3rd Year,7666419717   /   9373232907 (Ghansham),Vegitarian
+AS-44,Triple Room,B,,,,
+AS-44,Triple Room,C,Jaypal Dinesh Chavan,B.Voc - CS   -   3rd Year,9822259665   /   9527944330 (Dinesh),Non-Vegitarian
+AS-45,Dormitory,A,,,,
+AS-45,Dormitory,B,,,,
+AS-45,Dormitory,C,,,,
+AS-45,Dormitory,D,,,,
+AS-46,Single Room,A,Aryan Seth,CE   -   3rd Year,7054017835   /   9889104047 (Ashish),Vegitarian
+AS-47,Single Room,A,Chinmay Praful Wadettiwar,IT   -   3rd Year,8806827885   /   8999085071 (Praful),Non-Vegitarian
+AS-48,Triple Room,A,Vedant Dinesh Gundawar,-   3rd Year,9359670748   /   9881139203 (Dinesh),Non-Vegitarian
+AS-48,Triple Room,B,Aryan Nitin Nandurkar,-   3rd Year,8600525409   /   9407648980 (),Non-Vegitarian
+AS-48,Triple Room,C,Lakshya Hemraj Waluskar,-   3rd Year,7796119389   /   9960690986 (Hemraj),Non-Vegitarian
+AS-49,Single Room,A,Gaurav Prakash Kosare,Others   -   3rd Year,7588520045   /   942044922 (Prakash),Non-Vegitarian
+AS-50,Single Room,A,Jonathan Shiju,CE   -   3rd Year,9667070469   /   9968562766 (Shiju),Non-Vegitarian
+AS-51,Single Room,A,Jerin Benjamin,ME   -   3rd Year,8810338854   /   9810762171 (Benjamin),Non-Vegitarian
+AS-52,Single Room,A,Jacob P Mathew,CE   -   3rd Year,7835912404   /   8287408843 (Mathew),Non-Vegitarian
+AS-53,Single Room,A,Shreyash Vilas Tawade,CE   -   3rd Year,7841855945   /   7972365938 (Vilas),Vegitarian
+AS-54,Single Room,A,Sumer Bandu Jilalla,IT   -   3rd Year,7387377588   /   8805081650 (Bandu),Vegitarian
+AS-55,Single Room,A,John Doe,CS - 2nd Year,1234567890,Vegitarian

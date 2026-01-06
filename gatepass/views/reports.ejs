@@ -1,0 +1,156 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports</title>
+  <link rel="stylesheet" href="/stylesheets/reports.css">
+
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+  <link rel="icon" href="/images/4174.png">
+
+ <!--Load the AJAX API-->
+ <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+ <script type="text/javascript">
+
+   // Load the Visualization API and the corechart package.
+   google.charts.load('current', {'packages':['corechart']});
+
+   // Set a callback to run when the Google Visualization API is loaded.
+   google.charts.setOnLoadCallback(fetchAndDrawChart);
+     google.charts.setOnLoadCallback(fetchAndDrawlineChart);
+
+   // Callback that creates and populates a data table,
+   // instantiates the pie chart, passes in the data and
+   // draws it.
+   
+    function fetchAndDrawlineChart() {
+      // Fetch data from Node.js server
+      fetch('http://gate.svpcet.in/datatimelines')
+        .then(response => response.json())
+        .then(data => drawBackgroundColor(data))
+        .catch(error => console.error('Error fetching data:', error));
+
+        
+    }
+
+    function fetchAndDrawChart() {
+      // Fetch data from Node.js server
+      fetch('http://gate.svpcet.in/datastatus')
+        .then(response => response.json())
+        .then(data => drawChart(data))
+        .catch(error => console.error('Error fetching data:', error));
+
+    }
+    
+
+    function drawChart(data) {
+      // Process and format your data as needed for Google Charts
+      // (Depends on the chart type you want to use)
+
+      // Example: Column Chart
+      const chartData = new google.visualization.DataTable();
+      chartData.addColumn('string', 'Status');
+      chartData.addColumn('number', 'Count');
+      
+      data.forEach(item => {
+        chartData.addRow([item.status, item.Count]);
+      });
+
+      // Set chart options
+      const options = {
+        title: 'Blocked Status',
+        width: 450,
+        height: 450,
+      };
+      var chart = new google.visualization.PieChart(document.getElementById('chart_div1'));
+        chart.draw(chartData, options);
+    }
+
+
+    function drawBackgroundColor(data) {
+          var chartData = new google.visualization.DataTable();
+          chartData.addColumn('number', 'Timeframe');
+          chartData.addColumn('number', 'Count');
+
+          data.forEach(item => {
+        chartData.addRow([item.Timeframe, item.Count]);
+
+      });
+    
+          
+    
+          var options = {
+            hAxis: {
+              title: 'Time'
+            },
+            vAxis: {
+              title: 'Count of Student'
+            },
+           
+          title: 'Heavy traffic',
+          curveType: 'function',
+          legend: { position: 'bottom' }
+        
+          
+          };
+    
+          var chart = new google.visualization.LineChart(document.getElementById('chart_div2'));
+          chart.draw(chartData, options);
+        }
+  
+
+ </script>
+
+</head>
+
+<body>
+   
+  <div>
+    <center>
+        <a href="/daterange"><img src="/images/logo.png" /></a>
+    </center>
+  </div><br>
+  
+  <div class="row">
+    <div class="col-md-12 text-center">
+      <h2>Reports</h2>
+    </div><br><br><br>
+    <table>
+        <thead>
+          <tr>
+            <th scope="col">Total Students</th>
+            <th scope="col">Gate Out</th>
+            <th scope="col">Hostel Out</th>
+            <th scope="col">City Pass</th>
+            <th scope="col">Home Pass</th>
+            
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+           <td data-label="Total Students"><%- result.totalStudents %></td>
+           <td data-label="Gate Out"><%-result.gateOut %></td>
+           <td data-label="Hostel Out"><%-result.hostelOut %></td>
+           <td data-label="City Pass"><%-result.citypass %></td>
+           <td data-label="Home Pass"><%-result.homepass %></td>
+          </tr>
+         
+        </tbody>
+      </table>
+    <br>
+    
+    
+    <div class="col-md-6" align="center">
+      <div id="chart_div1" class="chart"></div>
+    </div>
+    <div class="col-md-6" align="left">
+      <div id="chart_div2" class="chart"></div>
+    </div>
+  </div>
+  
+</body>
+
+</html>
